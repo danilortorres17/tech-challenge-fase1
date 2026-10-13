@@ -1,0 +1,18 @@
+services:
+  api:
+    build: .
+    container_name: oficina-api
+    ports:
+      - "8000:8000"
+    environment:
+      # SQLite persistido num volume, fora do container
+      DATABASE_URL: "sqlite:////data/oficina.db"
+      JWT_SECRET: "troque-este-segredo-em-producao"
+      JWT_EXPIRA_MIN: "60"
+      ADMIN_USUARIO: "admin"
+      ADMIN_SENHA: "admin123"
+    volumes:
+      - oficina_data:/data
+
+volumes:
+  oficina_data:
