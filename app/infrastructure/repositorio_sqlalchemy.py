@@ -35,6 +35,8 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
                 session.add(model)
             model.cliente = ordem.cliente.valor
             model.veiculo = ordem.veiculo.valor
+            model.cliente_id = str(ordem.cliente_id) if ordem.cliente_id else None
+            model.veiculo_id = str(ordem.veiculo_id) if ordem.veiculo_id else None
             model.moeda = ordem.moeda
             model.status = ordem.status.value
             model.aprovado = ordem.aprovado
@@ -45,6 +47,7 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
                     descricao=s.descricao,
                     preco_valor=str(s.preco.valor),
                     moeda=s.preco.moeda,
+                    servico_id=str(s.servico_id) if s.servico_id else None,
                 )
                 for s in ordem.itens_servico
             ]
@@ -54,6 +57,7 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
                     preco_unitario_valor=str(p.preco_unitario.valor),
                     moeda=p.preco_unitario.moeda,
                     quantidade=p.quantidade,
+                    peca_id=str(p.peca_id) if p.peca_id else None,
                 )
                 for p in ordem.itens_peca
             ]
@@ -71,7 +75,11 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
     @staticmethod
     def _para_dominio(model: OrdemServicoModel) -> OrdemServico:
         itens_servico = [
-            ItemServico(s.descricao, Dinheiro(Decimal(s.preco_valor), s.moeda))
+            ItemServico(
+                s.descricao,
+                Dinheiro(Decimal(s.preco_valor), s.moeda),
+                UUID(s.servico_id) if s.servico_id else None,
+            )
             for s in model.itens_servico
         ]
         itens_peca = [
@@ -79,6 +87,7 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
                 p.descricao,
                 Dinheiro(Decimal(p.preco_unitario_valor), p.moeda),
                 p.quantidade,
+                UUID(p.peca_id) if p.peca_id else None,
             )
             for p in model.itens_peca
         ]
@@ -93,4 +102,6 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
             moeda=model.moeda,
             iniciado_execucao_em=model.iniciado_execucao_em,
             finalizado_em=model.finalizado_em,
+            cliente_id=UUID(model.cliente_id) if model.cliente_id else None,
+            veiculo_id=UUID(model.veiculo_id) if model.veiculo_id else None,
         )

@@ -13,6 +13,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 
 from app.application.casos_uso import (
+    AcaoOrdem,
+    AprovarOrdemServico,
     AvancarStatusDaOrdem,
     ConsultarOrdemServico,
     CriarOrdemServico,
@@ -20,11 +22,17 @@ from app.application.casos_uso import (
     IncluirServicoNaOrdem,
     ListarOrdensServico,
 )
+from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
 from app.domain.ordem_servico import OrdemServico
-from app.domain.repositorios import OrdemServicoRepositorio
-from app.domain.value_objects import Dinheiro
+from app.domain.repositorios import OrdemServicoRepositorio, RepositorioCrud
 from app.interfaces.auth import usuario_atual
-from app.interfaces.dependencias import obter_repositorio
+from app.interfaces.dependencias import (
+    obter_repositorio,
+    obter_repositorio_cliente,
+    obter_repositorio_peca,
+    obter_repositorio_servico,
+    obter_repositorio_veiculo,
+)
 from app.interfaces.schemas import (
     AvancarStatusIn,
     CriarOrdemIn,
@@ -43,6 +51,8 @@ def _para_saida(ordem: OrdemServico) -> OrdemServicoOut:
         id=str(ordem.id),
         cliente=ordem.cliente.formatado(),
         veiculo=ordem.veiculo.valor,
+        cliente_id=str(ordem.cliente_id) if ordem.cliente_id else None,
+        veiculo_id=str(ordem.veiculo_id) if ordem.veiculo_id else None,
         status=ordem.status.value,
         aprovado=ordem.aprovado,
         moeda=ordem.moeda,
@@ -68,15 +78,17 @@ def _para_saida(ordem: OrdemServico) -> OrdemServicoOut:
 
 @router.post(
     "", status_code=status.HTTP_201_CREATED, response_model=OrdemServicoOut,
-    summary="Abre uma nova ordem de serviço (requer autenticação)",
+    summary="Abre uma OS para um cliente e veículo cadastrados (requer autenticação)",
 )
 def criar(
     dados: CriarOrdemIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
+    repo_cliente: RepositorioCrud[Cliente] = Depends(obter_repositorio_cliente),
+    repo_veiculo: RepositorioCrud[Veiculo] = Depends(obter_repositorio_veiculo),
     usuario: str = Depends(usuario_atual),
 ):
-    ordem_id = CriarOrdemServico(repo).executar(
-        dados.documento_cliente, dados.placa, dados.moeda
+    ordem_id = CriarOrdemServico(repo, repo_cliente, repo_veiculo).executar(
+        UUID(dados.cliente_id), UUID(dados.veiculo_id), dados.moeda
     )
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 
@@ -102,30 +114,32 @@ def consultar(ordem_id: UUID, repo: OrdemServicoRepositorio = Depends(obter_repo
 
 @router.post(
     "/{ordem_id}/servicos", response_model=OrdemServicoOut,
-    summary="Inclui um serviço na ordem (requer autenticação)",
+    summary="Inclui um serviço do catálogo na ordem (requer autenticação)",
 )
 def incluir_servico(
     ordem_id: UUID,
     dados: IncluirServicoIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
+    repo_servico: RepositorioCrud[Servico] = Depends(obter_repositorio_servico),
     usuario: str = Depends(usuario_atual),
 ):
-    IncluirServicoNaOrdem(repo).executar(ordem_id, dados.descricao, Dinheiro(dados.preco))
+    IncluirServicoNaOrdem(repo, repo_servico).executar(ordem_id, UUID(dados.servico_id))
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 
 
 @router.post(
     "/{ordem_id}/pecas", response_model=OrdemServicoOut,
-    summary="Inclui uma peça/insumo na ordem (requer autenticação)",
+    summary="Inclui uma peça do catálogo na ordem (requer autenticação)",
 )
 def incluir_peca(
     ordem_id: UUID,
     dados: IncluirPecaIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
+    repo_peca: RepositorioCrud[Peca] = Depends(obter_repositorio_peca),
     usuario: str = Depends(usuario_atual),
 ):
-    IncluirPecaNaOrdem(repo).executar(
-        ordem_id, dados.descricao, Dinheiro(dados.preco_unitario), dados.quantidade
+    IncluirPecaNaOrdem(repo, repo_peca).executar(
+        ordem_id, UUID(dados.peca_id), dados.quantidade
     )
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 
@@ -138,7 +152,12 @@ def avancar_status(
     ordem_id: UUID,
     dados: AvancarStatusIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
+    repo_peca: RepositorioCrud[Peca] = Depends(obter_repositorio_peca),
     usuario: str = Depends(usuario_atual),
 ):
-    ordem = AvancarStatusDaOrdem(repo).executar(ordem_id, dados.acao)
+    if dados.acao == AcaoOrdem.APROVAR:
+        # Aprovar dá baixa no estoque das peças referenciadas.
+        ordem = AprovarOrdemServico(repo, repo_peca).executar(ordem_id)
+    else:
+        ordem = AvancarStatusDaOrdem(repo).executar(ordem_id, dados.acao)
     return _para_saida(ordem)

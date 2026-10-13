@@ -14,19 +14,17 @@ from app.application.casos_uso import AcaoOrdem
 
 # --- entrada ---
 class CriarOrdemIn(BaseModel):
-    documento_cliente: str = Field(examples=["111.444.777-35"])
-    placa: str = Field(examples=["ABC1D23"])
+    cliente_id: str = Field(description="id de um cliente cadastrado")
+    veiculo_id: str = Field(description="id de um veículo cadastrado")
     moeda: str = "BRL"
 
 
 class IncluirServicoIn(BaseModel):
-    descricao: str = Field(examples=["Troca de óleo"])
-    preco: Decimal = Field(examples=["120.00"])
+    servico_id: str = Field(description="id de um serviço do catálogo")
 
 
 class IncluirPecaIn(BaseModel):
-    descricao: str = Field(examples=["Filtro de óleo"])
-    preco_unitario: Decimal = Field(examples=["35.50"])
+    peca_id: str = Field(description="id de uma peça do catálogo")
     quantidade: int = Field(examples=[2], gt=0)
 
 
@@ -53,6 +51,8 @@ class OrdemServicoOut(BaseModel):
     id: str
     cliente: str
     veiculo: str
+    cliente_id: str | None
+    veiculo_id: str | None
     status: str
     aprovado: bool | None
     moeda: str

@@ -1,16 +1,10 @@
 # Relatório de Segurança
 
-Análise automática de segurança do projeto. Reexecutável:
+Reexecutável: `pip install -r requirements-dev.txt` então `bandit -r app` e `pip-audit -r requirements.txt`.
 
-```bash
-pip install -r requirements-dev.txt
-bandit -r app
-pip-audit -r requirements.txt
-```
+Última execução: 2026-10-13 18:13 UTC
 
-Última execução: 2026-10-13 16:44 UTC
-
-## 1. Análise estática do código (bandit)
+## 1. Análise estática (bandit)
 
 ```
 Run metrics:
@@ -27,7 +21,7 @@ Run metrics:
 Files skipped (0):
 ```
 
-**Resultado:** nenhum problema de segurança identificado (0 issues).
+**Resultado:** 0 issues.
 
 ## 2. Vulnerabilidades nas dependências (pip-audit)
 
@@ -37,9 +31,9 @@ No known vulnerabilities found
 
 **Resultado:** nenhuma vulnerabilidade conhecida.
 
-## Decisões de segurança relevantes
+## Decisões de segurança
 
-- Autenticação **JWT** (PyJWT) nas rotas administrativas e de cadastro; consulta de andamento pública.
-- Escolha do **PyJWT** em vez de python-jose, que arrastava a dependência `ecdsa` (vulnerabilidade sem correção).
-- Validação de CPF/CNPJ e placa nos objetos de valor; estoque nunca fica negativo (regra de domínio).
-- Segredos e credenciais fora do código, via variáveis de ambiente (`.env`, ignorado pelo git).
+- JWT (PyJWT) nas rotas administrativas; consulta de andamento pública.
+- Validação de CPF/CNPJ e placa nos objetos de valor; estoque nunca fica negativo.
+- Baixa de estoque na aprovação com verificação prévia (não aprova se faltar saldo).
+- Segredos via variáveis de ambiente (`.env`, ignorado pelo git).
