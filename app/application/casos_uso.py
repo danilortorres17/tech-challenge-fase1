@@ -78,3 +78,20 @@ class ConsultarOrdemServico(_CasoDeUsoDeOrdem):
 class ListarOrdensServico(_CasoDeUsoDeOrdem):
     def executar(self) -> list[OrdemServico]:
         return self._repo.listar()
+
+
+class CalcularTempoMedioExecucao(_CasoDeUsoDeOrdem):
+    """Tempo médio de execução das OS que já passaram por execução e finalização."""
+
+    def executar(self) -> dict[str, float | int]:
+        duracoes = [
+            o.duracao_execucao_segundos
+            for o in self._repo.listar()
+            if o.duracao_execucao_segundos is not None
+        ]
+        if not duracoes:
+            return {"amostras": 0, "tempo_medio_segundos": 0.0}
+        return {
+            "amostras": len(duracoes),
+            "tempo_medio_segundos": sum(duracoes) / len(duracoes),
+        }

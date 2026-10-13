@@ -38,6 +38,8 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
             model.moeda = ordem.moeda
             model.status = ordem.status.value
             model.aprovado = ordem.aprovado
+            model.iniciado_execucao_em = ordem.iniciado_execucao_em
+            model.finalizado_em = ordem.finalizado_em
             model.itens_servico = [
                 ItemServicoModel(
                     descricao=s.descricao,
@@ -89,4 +91,6 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
             itens_servico=itens_servico,
             itens_peca=itens_peca,
             moeda=model.moeda,
+            iniciado_execucao_em=model.iniciado_execucao_em,
+            finalizado_em=model.finalizado_em,
         )

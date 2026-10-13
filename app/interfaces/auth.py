@@ -9,7 +9,7 @@ import hmac
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError
+from jwt import InvalidTokenError
 
 from app.config import settings
 from app.infrastructure.seguranca import criar_token_acesso, decodificar_token
@@ -30,7 +30,8 @@ def login(form: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     token = criar_token_acesso(form.username)
-    return {"access_token": token, "token_type": "bearer"}
+    # "bearer" é o tipo de token padrão do OAuth2, não um segredo.
+    return {"access_token": token, "token_type": "bearer"}  # nosec B105
 
 
 def usuario_atual(token: str = Depends(oauth2_scheme)) -> str:
@@ -42,7 +43,7 @@ def usuario_atual(token: str = Depends(oauth2_scheme)) -> str:
     )
     try:
         dados = decodificar_token(token)
-    except JWTError:
+    except InvalidTokenError:
         raise erro
     sub = dados.get("sub")
     if sub is None:

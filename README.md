@@ -40,8 +40,9 @@ domínio em [`docs/ddd/`](docs/ddd/) e as decisões em [`docs/adr/`](docs/adr/).
 - FastAPI (REST + Swagger/OpenAPI automático)
 - Pydantic v2
 - SQLAlchemy 2 + SQLite
-- python-jose (JWT)
+- PyJWT (autenticação JWT)
 - pytest + pytest-cov
+- bandit + pip-audit (análise de segurança)
 - Docker + docker-compose
 
 ## Pré-requisitos
@@ -75,6 +76,22 @@ pytest
 ```
 
 A cobertura é exibida no terminal ao final da execução.
+
+## Qualidade e segurança
+
+- **Cobertura de testes:** 98% (mínimo exigido: 80%). Evidência em
+  [`docs/qualidade/cobertura.md`](docs/qualidade/cobertura.md).
+- **Análise de segurança:** `bandit` (código) e `pip-audit` (dependências),
+  ambos sem apontamentos. Relatório em
+  [`docs/qualidade/relatorio-seguranca.md`](docs/qualidade/relatorio-seguranca.md).
+
+Para reexecutar:
+
+```bash
+pip install -r requirements-dev.txt
+bandit -r app
+pip-audit -r requirements.txt
+```
 
 ## Acesso ao Swagger / documentação da API
 

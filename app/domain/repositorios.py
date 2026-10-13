@@ -7,9 +7,12 @@ banco de dados nenhum — podem ser testados com um repositório em memória.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 from uuid import UUID
 
 from app.domain.ordem_servico import OrdemServico
+
+T = TypeVar("T")
 
 
 class OrdemServicoRepositorio(ABC):
@@ -23,3 +26,19 @@ class OrdemServicoRepositorio(ABC):
 
     @abstractmethod
     def listar(self) -> list[OrdemServico]: ...
+
+
+class RepositorioCrud(ABC, Generic[T]):
+    """Contrato genérico de CRUD para as entidades de cadastro."""
+
+    @abstractmethod
+    def salvar(self, item: T) -> None: ...
+
+    @abstractmethod
+    def buscar_por_id(self, item_id: UUID) -> T | None: ...
+
+    @abstractmethod
+    def listar(self) -> list[T]: ...
+
+    @abstractmethod
+    def remover(self, item_id: UUID) -> bool: ...

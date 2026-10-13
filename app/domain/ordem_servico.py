@@ -6,6 +6,7 @@ que validam as regras de negócio antes de mudar qualquer coisa.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from app.domain.exceptions import OperacaoInvalida, TransicaoInvalida
@@ -15,6 +16,10 @@ from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
 
 # Status em que ainda é permitido alterar os itens da OS.
 _STATUS_EDITAVEIS = (StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO)
+
+
+def _agora() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class OrdemServico:
@@ -35,6 +40,8 @@ class OrdemServico:
         self._itens_peca: list[ItemPeca] = []
         self._status: StatusOS = StatusOS.RECEBIDA
         self._aprovado: bool | None = None
+        self._iniciado_execucao_em: datetime | None = None
+        self._finalizado_em: datetime | None = None
 
     @classmethod
     def reconstituir(
@@ -47,17 +54,17 @@ class OrdemServico:
         itens_servico: list[ItemServico],
         itens_peca: list[ItemPeca],
         moeda: str = "BRL",
+        iniciado_execucao_em: datetime | None = None,
+        finalizado_em: datetime | None = None,
     ) -> "OrdemServico":
-        """Reconstrói uma OS a partir de um estado já válido (vindo do banco).
-
-        Diferente do construtor + métodos, aqui não se replica o fluxo: o estado
-        persistido já é válido, então ele é restaurado diretamente.
-        """
+        """Reconstrói uma OS a partir de um estado já válido (vindo do banco)."""
         ordem = cls(cliente, veiculo, moeda, id=id)
         ordem._status = status
         ordem._aprovado = aprovado
         ordem._itens_servico = list(itens_servico)
         ordem._itens_peca = list(itens_peca)
+        ordem._iniciado_execucao_em = iniciado_execucao_em
+        ordem._finalizado_em = finalizado_em
         return ordem
 
     # --- leitura ---
@@ -72,6 +79,21 @@ class OrdemServico:
     @property
     def aprovado(self) -> bool | None:
         return self._aprovado
+
+    @property
+    def iniciado_execucao_em(self) -> datetime | None:
+        return self._iniciado_execucao_em
+
+    @property
+    def finalizado_em(self) -> datetime | None:
+        return self._finalizado_em
+
+    @property
+    def duracao_execucao_segundos(self) -> float | None:
+        """Tempo (em segundos) entre o início da execução e a finalização."""
+        if self._iniciado_execucao_em is None or self._finalizado_em is None:
+            return None
+        return (self._finalizado_em - self._iniciado_execucao_em).total_seconds()
 
     @property
     def itens_servico(self) -> tuple[ItemServico, ...]:
@@ -114,6 +136,7 @@ class OrdemServico:
     def aprovar(self) -> None:
         self._mudar_status(StatusOS.EM_EXECUCAO)
         self._aprovado = True
+        self._iniciado_execucao_em = _agora()
 
     def rejeitar(self) -> None:
         if self._status != StatusOS.AGUARDANDO_APROVACAO:
@@ -124,6 +147,7 @@ class OrdemServico:
 
     def concluir_execucao(self) -> None:
         self._mudar_status(StatusOS.FINALIZADA)
+        self._finalizado_em = _agora()
 
     def entregar(self) -> None:
         self._mudar_status(StatusOS.ENTREGUE)

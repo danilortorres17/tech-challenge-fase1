@@ -101,3 +101,19 @@ def test_listar(client) -> None:
     resposta = client.get("/ordens-servico")
     assert resposta.status_code == 200
     assert len(resposta.json()) == 1
+
+
+def test_tempo_medio_execucao(client) -> None:
+    ordem_id = _criar(client)
+    client.post(
+        f"/ordens-servico/{ordem_id}/servicos",
+        json={"descricao": "Alinhamento", "preco": "90.00"},
+    )
+    for acao in ["iniciar_diagnostico", "enviar_para_aprovacao", "aprovar", "concluir_execucao"]:
+        client.post(f"/ordens-servico/{ordem_id}/status", json={"acao": acao})
+
+    resposta = client.get("/relatorios/tempo-medio-execucao")
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert corpo["amostras"] == 1
+    assert "tempo_medio_formatado" in corpo
