@@ -1,0 +1,117 @@
+# Modelagem DDD — Oficina Mecânica (Event Storming)
+
+> Este documento é o roteiro do Event Storming: cada linha é um cartão a colocar
+> no board do Miro. Depois de montar o board, exporte-o para
+> `docs/ddd/event-storming.pdf`. O modelo abaixo deve corresponder ao código em `app/`.
+
+## Legenda dos cartões
+
+| Cor | Elemento | Como escrever |
+|-----|----------|---------------|
+| 🟧 Laranja | Evento de domínio | verbo no **passado** ("Orçamento gerado") |
+| 🟦 Azul | Comando | verbo no **imperativo** ("Gerar orçamento") |
+| 🟨 Amarelo | Ator | quem dispara o comando ("Atendente") |
+| 🟪 Roxo | Política / regra | automação que reage a um evento e dispara um comando |
+| 🟩 Verde | Read model | dado consultado antes de um comando |
+| 🟥 Rosa | Sistema externo | fora do domínio |
+
+Gramática: **Ator → Comando → Evento**. Sem ator, **Política → Comando → Evento**.
+
+---
+
+## Fluxo 1 — Criação da Ordem de Serviço
+
+| # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Observações |
+|---|----------------|--------------|-------------|-------------|
+| 1 | 🟨 Atendente | Identificar cliente | Cliente identificado | por CPF ou CNPJ (valida o documento) |
+| 2 | 🟨 Atendente | Cadastrar veículo | Veículo cadastrado | placa, marca, modelo, ano |
+| 3 | 🟨 Atendente | Abrir ordem de serviço | OS aberta | status inicial: **Recebida** |
+| 4 | 🟨 Atendente | Incluir serviços | Serviços incluídos | ex.: troca de óleo, alinhamento |
+| 5 | 🟨 Atendente | Incluir peças e insumos | Peças incluídas | 🟩 consulta saldo de estoque antes |
+| 6 | 🟪 Política: serviços/peças definidos | Gerar orçamento | Orçamento gerado | **automático**, sem ator |
+| 7 | 🟨 Atendente | Enviar orçamento ao cliente | Orçamento enviado | → status **Aguardando aprovação** |
+
+Regras: não gerar orçamento sem ao menos 1 serviço ou peça; orçamento = soma(serviços) + soma(peças).
+
+---
+
+## Fluxo 2 — Acompanhamento da Ordem de Serviço (máquina de status)
+
+```
+Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Finalizada → Entregue
+```
+
+| # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Transição de status |
+|---|----------------|--------------|-------------|---------------------|
+| 1 | 🟨 Mecânico | Registrar diagnóstico | Diagnóstico registrado | Recebida → Em diagnóstico |
+| 2 | 🟪 Política: orçamento enviado | — | — | Em diagnóstico → Aguardando aprovação |
+| 3 | 🟨 Cliente | Aprovar orçamento | Orçamento aprovado | Aguardando aprovação → Em execução |
+| 3b | 🟨 Cliente | Rejeitar orçamento | Orçamento rejeitado | **história alternativa** (fluxo separado) |
+| 4 | 🟪 Política: orçamento aprovado | Baixar peças do estoque | Estoque baixado | em **transação** com a aprovação |
+| 5 | 🟨 Mecânico | Concluir serviços | Serviços concluídos | Em execução → Finalizada |
+| 6 | 🟨 Atendente | Entregar veículo | Veículo entregue | Finalizada → Entregue |
+| 7 | 🟨 Cliente | Consultar andamento | — | 🟩 read model: status da OS — **endpoint público** |
+
+Regras: só entra em "Em execução" após orçamento aprovado; transições só na ordem acima (pular etapa = erro de domínio).
+
+**Evento pivotal:** `Orçamento aprovado` marca a virada de negociação → execução. Forte indicador de fronteira de contexto.
+
+---
+
+## Fluxo 3 — Gestão de Peças e Insumos
+
+| # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Observações |
+|---|----------------|--------------|-------------|-------------|
+| 1 | 🟨 Estoquista | Cadastrar peça | Peça cadastrada | nome, preço, saldo inicial |
+| 2 | 🟨 Estoquista | Repor estoque | Estoque reposto | aumenta o saldo |
+| 3 | 🟪 Política: orçamento aprovado | Baixar peças do estoque | Estoque baixado | diminui o saldo (vem do Fluxo 2) |
+| 4 | 🟪 Política: saldo abaixo do mínimo | Alertar estoque baixo | Estoque baixo sinalizado | 🟩 read model: saldo x mínimo (opcional) |
+
+Regra: não aprovar orçamento se alguma peça estiver sem saldo suficiente.
+
+---
+
+## Agregados, Entidades e Objetos de Valor
+
+### Agregado `OrdemServico` (raiz) — núcleo do sistema
+- **Entidades internas:** `ItemServico`, `ItemPeca`
+- **Objetos de valor:** `StatusOS`, `Orcamento`
+- **Responsabilidade:** só o agregado altera o próprio status e aplica as regras de transição. Quem está fora solicita via comando.
+
+### Agregado `Cliente` (raiz)
+- **Objeto de valor:** `CpfCnpj` (valida o documento)
+
+### Agregado `Veiculo` (raiz)
+- **Objeto de valor:** `Placa` (valida o formato)
+
+### Agregado `Peca` (raiz)
+- Controla o próprio **saldo de estoque** (reposição e baixa)
+
+### Agregado `Servico` (raiz)
+- Catálogo de serviços com preço de mão de obra
+
+### Objetos de valor transversais
+- `Dinheiro` (valor + moeda; evita float solto para preços)
+
+---
+
+## Bounded Contexts (identificados)
+
+| Contexto | Tipo | O que contém |
+|----------|------|--------------|
+| **Atendimento** | Principal (core) | OrdemServico, Orçamento, máquina de status |
+| **Cadastros / Catálogo** | Suporte | Cliente, Veículo, Serviço |
+| **Estoque** | Suporte | Peça, saldo, reposição e baixa |
+
+Conexão entre contextos: a política `Orçamento aprovado` (Atendimento) dispara a baixa no **Estoque**. No MVP tudo vive no mesmo monolito, mas a separação lógica em módulos espelha esses contextos.
+
+---
+
+## Regras de negócio consolidadas (políticas)
+
+1. Orçamento = soma dos serviços + soma das peças.
+2. Não gerar orçamento sem ao menos um serviço ou peça.
+3. Transições de status só na ordem definida — pular etapa lança exceção de domínio.
+4. OS só vai para "Em execução" depois do orçamento aprovado.
+5. Baixa de estoque acontece na aprovação do orçamento, dentro de uma transação; não aprova se faltar saldo.
+6. CPF/CNPJ e placa precisam ser válidos antes de persistir (validação no objeto de valor).
