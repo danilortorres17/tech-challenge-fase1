@@ -26,7 +26,11 @@ class MoedaIncompativel(ErroDeDominio):
 
 
 class QuantidadeInvalida(ErroDeDominio):
-    """Quantidade de item inválida (ex.: zero ou negativa)."""
+    """Quantidade inválida (ex.: zero ou negativa)."""
+
+
+class EstoqueInsuficiente(ErroDeDominio):
+    """Baixa de estoque maior que o saldo disponível."""
 
 
 class TransicaoInvalida(ErroDeDominio):
@@ -37,5 +41,9 @@ class OperacaoInvalida(ErroDeDominio):
     """Operação não permitida para o estado atual da Ordem de Serviço."""
 
 
-class OrdemNaoEncontrada(ErroDeDominio):
-    """Ordem de Serviço não localizada pelo identificador informado."""
+class RegistroNaoEncontrado(ErroDeDominio):
+    """Registro não localizado pelo identificador informado (gera HTTP 404)."""
+
+
+class OrdemNaoEncontrada(RegistroNaoEncontrado):
+    """Ordem de Serviço não localizada."""

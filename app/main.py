@@ -11,9 +11,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.domain.exceptions import ErroDeDominio, OrdemNaoEncontrada
+from app.domain.exceptions import ErroDeDominio, RegistroNaoEncontrado
 from app.infrastructure.db.base import criar_tabelas
-from app.interfaces import auth, health, ordens
+from app.interfaces import auth, cadastros, health, ordens, relatorios
 
 
 @asynccontextmanager
@@ -37,9 +37,14 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(ordens.router)
+    app.include_router(cadastros.clientes)
+    app.include_router(cadastros.veiculos)
+    app.include_router(cadastros.servicos)
+    app.include_router(cadastros.pecas)
+    app.include_router(relatorios.router)
 
-    @app.exception_handler(OrdemNaoEncontrada)
-    async def _nao_encontrada(request: Request, exc: OrdemNaoEncontrada):
+    @app.exception_handler(RegistroNaoEncontrado)
+    async def _nao_encontrado(request: Request, exc: RegistroNaoEncontrado):
         return JSONResponse(status_code=404, content={"detail": str(exc)})
 
     @app.exception_handler(ErroDeDominio)

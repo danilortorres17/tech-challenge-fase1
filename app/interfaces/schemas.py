@@ -59,3 +59,9 @@ class OrdemServicoOut(BaseModel):
     orcamento: str
     itens_servico: list[ItemServicoOut]
     itens_peca: list[ItemPecaOut]
+
+
+class TempoMedioOut(BaseModel):
+    amostras: int
+    tempo_medio_segundos: float
+    tempo_medio_formatado: str

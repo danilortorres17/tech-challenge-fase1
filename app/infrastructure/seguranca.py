@@ -1,4 +1,4 @@
-"""Geração e validação de tokens JWT.
+"""Geração e validação de tokens JWT (via PyJWT).
 
 Detalhe de infraestrutura: as camadas de cima só pedem "crie um token" ou
 "valide este token", sem conhecer a biblioteca por baixo.
@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from jose import jwt
+import jwt
 
 from app.config import settings
 
@@ -22,6 +22,6 @@ def criar_token_acesso(sub: str) -> str:
 def decodificar_token(token: str) -> dict:
     """Valida a assinatura e a expiração, devolvendo o conteúdo do token.
 
-    Lança jose.JWTError (ou subclasses) se o token for inválido ou expirado.
+    Lança jwt.InvalidTokenError (ou subclasses) se o token for inválido/expirado.
     """
     return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algoritmo])
