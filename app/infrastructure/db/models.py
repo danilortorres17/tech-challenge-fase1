@@ -22,6 +22,8 @@ class OrdemServicoModel(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     cliente: Mapped[str] = mapped_column(String(14))
     veiculo: Mapped[str] = mapped_column(String(7))
+    cliente_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    veiculo_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     moeda: Mapped[str] = mapped_column(String(3), default="BRL")
     status: Mapped[str] = mapped_column(String(30))
     aprovado: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
@@ -46,6 +48,7 @@ class ItemServicoModel(Base):
     descricao: Mapped[str] = mapped_column(String(200))
     preco_valor: Mapped[str] = mapped_column(String(20))
     moeda: Mapped[str] = mapped_column(String(3), default="BRL")
+    servico_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
 
     ordem: Mapped["OrdemServicoModel"] = relationship(back_populates="itens_servico")
 
@@ -59,6 +62,7 @@ class ItemPecaModel(Base):
     preco_unitario_valor: Mapped[str] = mapped_column(String(20))
     moeda: Mapped[str] = mapped_column(String(3), default="BRL")
     quantidade: Mapped[int] = mapped_column(Integer)
+    peca_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
 
     ordem: Mapped["OrdemServicoModel"] = relationship(back_populates="itens_peca")
 

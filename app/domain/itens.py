@@ -2,10 +2,12 @@
 
 São entidades internas do agregado OrdemServico. Imutáveis — qualquer mudança
 é feita adicionando/removendo itens na OS, não editando o item no lugar.
+Podem referenciar (por id) um item do catálogo de cadastros (Serviço/Peça).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from app.domain.exceptions import QuantidadeInvalida
 from app.domain.value_objects import Dinheiro
@@ -17,6 +19,7 @@ class ItemServico:
 
     descricao: str
     preco: Dinheiro
+    servico_id: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,7 @@ class ItemPeca:
     descricao: str
     preco_unitario: Dinheiro
     quantidade: int
+    peca_id: UUID | None = None
 
     def __post_init__(self) -> None:
         if self.quantidade <= 0:

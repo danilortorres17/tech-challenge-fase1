@@ -3,6 +3,7 @@
 A OrdemServico é a raiz do agregado: só ela altera o próprio estado. Quem está
 de fora lê (status, orçamento) ou solicita uma mudança por um de seus métodos,
 que validam as regras de negócio antes de mudar qualquer coisa.
+Pode referenciar o cliente e o veículo cadastrados (por id).
 """
 from __future__ import annotations
 
@@ -14,7 +15,6 @@ from app.domain.itens import ItemPeca, ItemServico
 from app.domain.status_os import StatusOS, pode_transicionar
 from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
 
-# Status em que ainda é permitido alterar os itens da OS.
 _STATUS_EDITAVEIS = (StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO)
 
 
@@ -31,10 +31,14 @@ class OrdemServico:
         veiculo: Placa,
         moeda: str = "BRL",
         id: UUID | None = None,
+        cliente_id: UUID | None = None,
+        veiculo_id: UUID | None = None,
     ) -> None:
         self.id = id or uuid4()
         self.cliente = cliente
         self.veiculo = veiculo
+        self.cliente_id = cliente_id
+        self.veiculo_id = veiculo_id
         self._moeda = moeda
         self._itens_servico: list[ItemServico] = []
         self._itens_peca: list[ItemPeca] = []
@@ -56,9 +60,11 @@ class OrdemServico:
         moeda: str = "BRL",
         iniciado_execucao_em: datetime | None = None,
         finalizado_em: datetime | None = None,
+        cliente_id: UUID | None = None,
+        veiculo_id: UUID | None = None,
     ) -> "OrdemServico":
         """Reconstrói uma OS a partir de um estado já válido (vindo do banco)."""
-        ordem = cls(cliente, veiculo, moeda, id=id)
+        ordem = cls(cliente, veiculo, moeda, id=id, cliente_id=cliente_id, veiculo_id=veiculo_id)
         ordem._status = status
         ordem._aprovado = aprovado
         ordem._itens_servico = list(itens_servico)
@@ -90,7 +96,6 @@ class OrdemServico:
 
     @property
     def duracao_execucao_segundos(self) -> float | None:
-        """Tempo (em segundos) entre o início da execução e a finalização."""
         if self._iniciado_execucao_em is None or self._finalizado_em is None:
             return None
         return (self._finalizado_em - self._iniciado_execucao_em).total_seconds()
@@ -104,15 +109,21 @@ class OrdemServico:
         return tuple(self._itens_peca)
 
     # --- composição do orçamento ---
-    def incluir_servico(self, descricao: str, preco: Dinheiro) -> None:
-        self._exige_status_editavel()
-        self._itens_servico.append(ItemServico(descricao, preco))
-
-    def incluir_peca(
-        self, descricao: str, preco_unitario: Dinheiro, quantidade: int
+    def incluir_servico(
+        self, descricao: str, preco: Dinheiro, servico_id: UUID | None = None
     ) -> None:
         self._exige_status_editavel()
-        self._itens_peca.append(ItemPeca(descricao, preco_unitario, quantidade))
+        self._itens_servico.append(ItemServico(descricao, preco, servico_id))
+
+    def incluir_peca(
+        self,
+        descricao: str,
+        preco_unitario: Dinheiro,
+        quantidade: int,
+        peca_id: UUID | None = None,
+    ) -> None:
+        self._exige_status_editavel()
+        self._itens_peca.append(ItemPeca(descricao, preco_unitario, quantidade, peca_id))
 
     def calcular_orcamento(self) -> Dinheiro:
         total = Dinheiro.zero(self._moeda)
