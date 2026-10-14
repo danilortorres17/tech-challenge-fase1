@@ -30,6 +30,7 @@ from app.infrastructure.repositorios_crud import (
     RepositorioServicoSQLAlchemy,
     RepositorioVeiculoSQLAlchemy,
 )
+from app.infrastructure.unit_of_work import UnidadeDeTrabalhoSQLAlchemy
 
 
 @pytest.fixture
@@ -49,6 +50,7 @@ def ctx():
         peca = RepositorioPecaSQLAlchemy(factory)
 
     amb = Ambiente()
+    amb.factory = factory
     amb.cliente = Cliente(CpfCnpj("111.444.777-35"), "Maria")
     amb.veiculo = Veiculo(Placa("ABC1D23"), "VW", "Gol", 2020)
     amb.servico = Servico("Alinhamento", Dinheiro(Decimal("90.00")))
@@ -83,10 +85,31 @@ def test_aprovacao_baixa_estoque_persistido(ctx) -> None:
     avancar = AvancarStatusDaOrdem(ctx.os)
     avancar.executar(ordem_id, AcaoOrdem.INICIAR_DIAGNOSTICO)
     avancar.executar(ordem_id, AcaoOrdem.ENVIAR_APROVACAO)
-    AprovarOrdemServico(ctx.os, ctx.peca).executar(ordem_id)
+    AprovarOrdemServico(UnidadeDeTrabalhoSQLAlchemy(ctx.factory)).executar(ordem_id)
 
     assert ConsultarOrdemServico(ctx.os).executar(ordem_id).status == StatusOS.EM_EXECUCAO
     assert ctx.peca.buscar_por_id(ctx.peca_obj.id).estoque == 6  # 10 - 4
+
+
+def test_aprovacao_faz_rollback_se_falhar_ao_salvar_ordem(ctx, monkeypatch) -> None:
+    """Se algo falhar depois da baixa, a transação desfaz tudo (UoW)."""
+    ordem_id = _criar(ctx)
+    IncluirPecaNaOrdem(ctx.os, ctx.peca).executar(ordem_id, ctx.peca_obj.id, 4)
+    avancar = AvancarStatusDaOrdem(ctx.os)
+    avancar.executar(ordem_id, AcaoOrdem.INICIAR_DIAGNOSTICO)
+    avancar.executar(ordem_id, AcaoOrdem.ENVIAR_APROVACAO)
+
+    # Força um erro ao gravar a OS, depois de a baixa de estoque já ter ocorrido.
+    def explode(self, ordem):
+        raise RuntimeError("falha simulada ao salvar a OS")
+
+    monkeypatch.setattr(RepositorioOrdemServicoSQLAlchemy, "salvar", explode)
+    with pytest.raises(RuntimeError):
+        AprovarOrdemServico(UnidadeDeTrabalhoSQLAlchemy(ctx.factory)).executar(ordem_id)
+
+    # rollback: estoque permanece intacto e a OS continua aguardando aprovação.
+    assert ctx.peca.buscar_por_id(ctx.peca_obj.id).estoque == 10
+    assert ConsultarOrdemServico(ctx.os).executar(ordem_id).status == StatusOS.AGUARDANDO_APROVACAO
 
 
 def test_listar(ctx) -> None:

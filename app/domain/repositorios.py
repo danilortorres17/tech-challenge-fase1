@@ -42,3 +42,37 @@ class RepositorioCrud(ABC, Generic[T]):
 
     @abstractmethod
     def remover(self, item_id: UUID) -> bool: ...
+
+
+class UnidadeDeTrabalho(ABC):
+    """Porta de transação (padrão Unit of Work).
+
+    Agrupa operações de vários repositórios numa única transação: ou todas são
+    confirmadas juntas (commit), ou nenhuma é (rollback). Usada como gerenciador
+    de contexto:
+
+        with uow:
+            uow.ordens.salvar(ordem)
+            uow.pecas.salvar(peca)
+        # commit automático ao sair sem erro; rollback se houver exceção.
+
+    Os repositórios expostos compartilham a mesma transação.
+    """
+
+    ordens: "OrdemServicoRepositorio"
+    pecas: "RepositorioCrud"
+
+    def __enter__(self) -> "UnidadeDeTrabalho":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if exc_type is None:
+            self.commit()
+        else:
+            self.rollback()
+
+    @abstractmethod
+    def commit(self) -> None: ...
+
+    @abstractmethod
+    def rollback(self) -> None: ...

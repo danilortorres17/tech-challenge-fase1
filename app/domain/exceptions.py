@@ -29,6 +29,14 @@ class QuantidadeInvalida(ErroDeDominio):
     """Quantidade inválida (ex.: zero ou negativa)."""
 
 
+class AnoInvalido(ErroDeDominio):
+    """Ano do veículo fora de uma faixa plausível."""
+
+
+class RegistroDuplicado(ErroDeDominio):
+    """Já existe um registro com a mesma chave natural (ex.: CPF, placa)."""
+
+
 class EstoqueInsuficiente(ErroDeDominio):
     """Baixa de estoque maior que o saldo disponível."""
 

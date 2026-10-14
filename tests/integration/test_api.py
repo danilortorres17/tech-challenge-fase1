@@ -18,6 +18,7 @@ from app.infrastructure.repositorios_crud import (
     RepositorioServicoSQLAlchemy,
     RepositorioVeiculoSQLAlchemy,
 )
+from app.infrastructure.unit_of_work import UnidadeDeTrabalhoSQLAlchemy
 from app.interfaces.auth import usuario_atual
 from app.interfaces.dependencias import (
     obter_repositorio,
@@ -25,6 +26,7 @@ from app.interfaces.dependencias import (
     obter_repositorio_peca,
     obter_repositorio_servico,
     obter_repositorio_veiculo,
+    obter_unidade_trabalho,
 )
 from app.main import app
 
@@ -42,6 +44,7 @@ def client() -> TestClient:
     app.dependency_overrides[obter_repositorio_veiculo] = lambda: RepositorioVeiculoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_servico] = lambda: RepositorioServicoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_peca] = lambda: RepositorioPecaSQLAlchemy(factory)
+    app.dependency_overrides[obter_unidade_trabalho] = lambda: UnidadeDeTrabalhoSQLAlchemy(factory)
     app.dependency_overrides[usuario_atual] = lambda: "teste"
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -142,6 +145,41 @@ def test_listar(client) -> None:
     r = client.get("/ordens-servico")
     assert r.status_code == 200
     assert len(r.json()) == 1
+
+
+def test_remover_servico_e_peca_pela_api(client) -> None:
+    ordem_id = _criar_os(client)
+    servico_id = _id_servico(client)
+    peca_id = _id_peca(client, estoque=10)
+    client.post(f"/ordens-servico/{ordem_id}/servicos", json={"servico_id": servico_id})
+    client.post(f"/ordens-servico/{ordem_id}/pecas", json={"peca_id": peca_id, "quantidade": 2})
+    assert client.get(f"/ordens-servico/{ordem_id}").json()["orcamento"] == "161.00"
+
+    r = client.delete(f"/ordens-servico/{ordem_id}/pecas/{peca_id}")
+    assert r.status_code == 200
+    assert r.json()["orcamento"] == "90.00"  # só o serviço
+
+    r = client.delete(f"/ordens-servico/{ordem_id}/servicos/{servico_id}")
+    assert r.json()["orcamento"] == "0.00"
+
+    # remover algo que não está na OS -> 404
+    assert client.delete(f"/ordens-servico/{ordem_id}/servicos/{servico_id}").status_code == 404
+
+
+def test_rejeitar_e_reabrir_pela_api(client) -> None:
+    ordem_id = _criar_os(client)
+    client.post(f"/ordens-servico/{ordem_id}/servicos", json={"servico_id": _id_servico(client)})
+    client.post(f"/ordens-servico/{ordem_id}/status", json={"acao": "iniciar_diagnostico"})
+    client.post(f"/ordens-servico/{ordem_id}/status", json={"acao": "enviar_para_aprovacao"})
+
+    r = client.post(f"/ordens-servico/{ordem_id}/status", json={"acao": "rejeitar"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "Rejeitada"
+    assert r.json()["aprovado"] is False
+
+    # reabre para ajuste e reenvia
+    r = client.post(f"/ordens-servico/{ordem_id}/status", json={"acao": "reabrir_diagnostico"})
+    assert r.json()["status"] == "Em diagnóstico"
 
 
 def test_tempo_medio_execucao(client) -> None:

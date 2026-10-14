@@ -17,6 +17,7 @@ from app.application.casos_uso import (
 from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
 from app.domain.exceptions import (
     EstoqueInsuficiente,
+    OperacaoInvalida,
     OrdemNaoEncontrada,
     RegistroNaoEncontrado,
     TransicaoInvalida,
@@ -26,6 +27,7 @@ from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
 from app.infrastructure.repositorio_memoria import (
     RepositorioCrudEmMemoria,
     RepositorioOrdemServicoEmMemoria,
+    UnidadeDeTrabalhoEmMemoria,
 )
 
 
@@ -55,6 +57,11 @@ def _criar(ctx):
     )
 
 
+def _aprovar(ctx, ordem_id):
+    uow = UnidadeDeTrabalhoEmMemoria(ctx.os, ctx.peca)
+    return AprovarOrdemServico(uow).executar(ordem_id)
+
+
 def test_criar_persiste_ordem_recebida(ctx) -> None:
     ordem_id = _criar(ctx)
     ordem = ConsultarOrdemServico(ctx.os).executar(ordem_id)
@@ -66,6 +73,18 @@ def test_criar_persiste_ordem_recebida(ctx) -> None:
 def test_criar_com_cliente_inexistente_lanca_erro(ctx) -> None:
     with pytest.raises(RegistroNaoEncontrado):
         CriarOrdemServico(ctx.os, ctx.cli, ctx.vei).executar(uuid4(), ctx.veiculo.id)
+
+
+def test_criar_os_com_veiculo_de_outro_cliente_lanca_erro(ctx) -> None:
+    dono = Cliente(CpfCnpj("111.444.777-35"), "Dono")
+    ctx.cli.salvar(dono)
+    veiculo_do_dono = Veiculo(Placa("XYZ4A56"), "Fiat", "Uno", 2019, cliente_id=dono.id)
+    ctx.vei.salvar(veiculo_do_dono)
+    # ctx.cliente é outra pessoa → não pode abrir OS com o veículo do dono
+    with pytest.raises(OperacaoInvalida):
+        CriarOrdemServico(ctx.os, ctx.cli, ctx.vei).executar(
+            ctx.cliente.id, veiculo_do_dono.id
+        )
 
 
 def test_incluir_itens_e_calcular_orcamento(ctx) -> None:
@@ -82,7 +101,7 @@ def test_fluxo_completo_da_baixa_no_estoque(ctx) -> None:
     avancar = AvancarStatusDaOrdem(ctx.os)
     avancar.executar(ordem_id, AcaoOrdem.INICIAR_DIAGNOSTICO)
     avancar.executar(ordem_id, AcaoOrdem.ENVIAR_APROVACAO)
-    AprovarOrdemServico(ctx.os, ctx.peca).executar(ordem_id)  # baixa estoque
+    _aprovar(ctx, ordem_id)  # baixa estoque
     avancar.executar(ordem_id, AcaoOrdem.CONCLUIR)
     ordem = avancar.executar(ordem_id, AcaoOrdem.ENTREGAR)
 
@@ -99,14 +118,14 @@ def test_aprovar_sem_estoque_nao_altera_nada(ctx) -> None:
     AvancarStatusDaOrdem(ctx.os).executar(ordem_id, AcaoOrdem.INICIAR_DIAGNOSTICO)
     AvancarStatusDaOrdem(ctx.os).executar(ordem_id, AcaoOrdem.ENVIAR_APROVACAO)
     with pytest.raises(EstoqueInsuficiente):
-        AprovarOrdemServico(ctx.os, ctx.peca).executar(ordem_id)
+        _aprovar(ctx, ordem_id)
     assert ctx.peca.buscar_por_id(peca_rara.id).estoque == 1  # inalterado
 
 
 def test_nao_pode_aprovar_pulando_etapa(ctx) -> None:
     ordem_id = _criar(ctx)
     with pytest.raises(TransicaoInvalida):
-        AprovarOrdemServico(ctx.os, ctx.peca).executar(ordem_id)
+        _aprovar(ctx, ordem_id)
 
 
 def test_ordem_inexistente_lanca_erro(ctx) -> None:

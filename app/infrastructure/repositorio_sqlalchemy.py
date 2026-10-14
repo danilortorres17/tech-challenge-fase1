@@ -9,13 +9,12 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy.orm import sessionmaker
-
 from app.domain.itens import ItemPeca, ItemServico
 from app.domain.ordem_servico import OrdemServico
 from app.domain.repositorios import OrdemServicoRepositorio
 from app.domain.status_os import StatusOS
 from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
+from app.infrastructure.db.base import RepositorioSQLAlchemy
 from app.infrastructure.db.models import (
     ItemPecaModel,
     ItemServicoModel,
@@ -23,12 +22,9 @@ from app.infrastructure.db.models import (
 )
 
 
-class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
-    def __init__(self, session_factory: sessionmaker) -> None:
-        self._session_factory = session_factory
-
+class RepositorioOrdemServicoSQLAlchemy(RepositorioSQLAlchemy, OrdemServicoRepositorio):
     def salvar(self, ordem: OrdemServico) -> None:
-        with self._session_factory() as session:
+        with self._sessao() as session:
             model = session.get(OrdemServicoModel, str(ordem.id))
             if model is None:
                 model = OrdemServicoModel(id=str(ordem.id))
@@ -61,15 +57,14 @@ class RepositorioOrdemServicoSQLAlchemy(OrdemServicoRepositorio):
                 )
                 for p in ordem.itens_peca
             ]
-            session.commit()
 
     def buscar_por_id(self, ordem_id: UUID) -> OrdemServico | None:
-        with self._session_factory() as session:
+        with self._sessao() as session:
             model = session.get(OrdemServicoModel, str(ordem_id))
             return self._para_dominio(model) if model else None
 
     def listar(self) -> list[OrdemServico]:
-        with self._session_factory() as session:
+        with self._sessao() as session:
             return [self._para_dominio(m) for m in session.query(OrdemServicoModel).all()]
 
     @staticmethod

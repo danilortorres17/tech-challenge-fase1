@@ -9,7 +9,11 @@ from typing import Generic, TypeVar
 from uuid import UUID
 
 from app.domain.ordem_servico import OrdemServico
-from app.domain.repositorios import OrdemServicoRepositorio, RepositorioCrud
+from app.domain.repositorios import (
+    OrdemServicoRepositorio,
+    RepositorioCrud,
+    UnidadeDeTrabalho,
+)
 
 T = TypeVar("T")
 
@@ -48,3 +52,27 @@ class RepositorioCrudEmMemoria(RepositorioCrud[T], Generic[T]):
             del self._dados[item_id]
             return True
         return False
+
+
+class UnidadeDeTrabalhoEmMemoria(UnidadeDeTrabalho):
+    """Unidade de Trabalho para testes: agrupa repositórios em memória.
+
+    Como os repositórios em memória guardam os próprios objetos, não há uma
+    transação real para confirmar ou desfazer — commit/rollback são no-ops. A
+    atomicidade da aprovação, nos testes, é garantida pela conferência prévia de
+    saldo no caso de uso (nada é baixado se faltar estoque em qualquer peça).
+    """
+
+    def __init__(
+        self,
+        ordens: OrdemServicoRepositorio,
+        pecas: RepositorioCrud,
+    ) -> None:
+        self.ordens = ordens
+        self.pecas = pecas
+
+    def commit(self) -> None:  # pragma: no cover - sem transação em memória
+        pass
+
+    def rollback(self) -> None:  # pragma: no cover - sem transação em memória
+        pass

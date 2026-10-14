@@ -32,6 +32,7 @@
 | **Em execução** | Orçamento aprovado; serviços em andamento. |
 | **Finalizada** | Serviços concluídos. |
 | **Entregue** | Veículo devolvido ao cliente. |
+| **Rejeitada** | Cliente recusou o orçamento; pode ser reaberta para ajuste e reenvio. |
 
 ## Atores
 

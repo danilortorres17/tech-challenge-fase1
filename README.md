@@ -15,7 +15,9 @@ A Ordem de Serviço (OS) é o núcleo: o cliente é identificado por CPF/CNPJ, o
 veículo é cadastrado, serviços e peças são incluídos, e o orçamento é calculado
 automaticamente. A OS percorre uma máquina de status
 (Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Finalizada →
-Entregue) com regras de transição aplicadas no domínio. As rotas
+Entregue; um orçamento recusado vai para Rejeitada e pode ser reaberto para
+ajuste) com regras de transição aplicadas no domínio. A aprovação dá baixa no
+estoque das peças dentro de uma transação única (Unit of Work). As rotas
 administrativas são protegidas por JWT; a consulta de andamento é pública.
 
 ## Arquitetura utilizada

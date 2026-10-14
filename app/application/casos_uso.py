@@ -12,9 +12,17 @@ from enum import Enum
 from uuid import UUID
 
 from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
-from app.domain.exceptions import OrdemNaoEncontrada, RegistroNaoEncontrado
+from app.domain.exceptions import (
+    OperacaoInvalida,
+    OrdemNaoEncontrada,
+    RegistroNaoEncontrado,
+)
 from app.domain.ordem_servico import OrdemServico
-from app.domain.repositorios import OrdemServicoRepositorio, RepositorioCrud
+from app.domain.repositorios import (
+    OrdemServicoRepositorio,
+    RepositorioCrud,
+    UnidadeDeTrabalho,
+)
 
 
 class AcaoOrdem(str, Enum):
@@ -24,6 +32,7 @@ class AcaoOrdem(str, Enum):
     ENVIAR_APROVACAO = "enviar_para_aprovacao"
     APROVAR = "aprovar"
     REJEITAR = "rejeitar"
+    REABRIR = "reabrir_diagnostico"
     CONCLUIR = "concluir_execucao"
     ENTREGAR = "entregar"
 
@@ -61,6 +70,10 @@ class CriarOrdemServico:
         veiculo = self._repo_veiculo.buscar_por_id(veiculo_id)
         if veiculo is None:
             raise RegistroNaoEncontrado(f"Veículo não encontrado: {veiculo_id}")
+        if veiculo.cliente_id is not None and veiculo.cliente_id != cliente_id:
+            raise OperacaoInvalida(
+                "O veículo informado pertence a outro cliente."
+            )
         ordem = OrdemServico(
             cliente.documento, veiculo.placa, moeda,
             cliente_id=cliente_id, veiculo_id=veiculo_id,
@@ -105,43 +118,66 @@ class IncluirPecaNaOrdem(_CasoDeUsoDeOrdem):
         self._repo.salvar(ordem)
 
 
-class AprovarOrdemServico(_CasoDeUsoDeOrdem):
-    """Aprova o orçamento e dá baixa no estoque das peças referenciadas.
+class RemoverServicoDaOrdem(_CasoDeUsoDeOrdem):
+    """Remove um serviço da OS (enquanto ela está editável)."""
 
-    Verifica o estoque de TODAS as peças antes de aplicar qualquer baixa
-    (check-then-apply): se faltar saldo de qualquer uma, nada é alterado.
-    """
-
-    def __init__(
-        self, repositorio: OrdemServicoRepositorio, repo_peca: RepositorioCrud[Peca]
-    ) -> None:
-        super().__init__(repositorio)
-        self._repo_peca = repo_peca
-
-    def executar(self, ordem_id: UUID) -> OrdemServico:
+    def executar(self, ordem_id: UUID, servico_id: UUID) -> OrdemServico:
         ordem = self._carregar(ordem_id)
-
-        # Agrega a quantidade necessária por peça (evita baixa dupla).
-        necessario: dict[UUID, int] = defaultdict(int)
-        for item in ordem.itens_peca:
-            if item.peca_id is not None:
-                necessario[item.peca_id] += item.quantidade
-
-        # Carrega e dá baixa em memória (lança EstoqueInsuficiente se faltar).
-        pecas_atualizadas: list[Peca] = []
-        for peca_id, quantidade in necessario.items():
-            peca = self._repo_peca.buscar_por_id(peca_id)
-            if peca is None:
-                raise RegistroNaoEncontrado(f"Peça não encontrada: {peca_id}")
-            peca.baixar_estoque(quantidade)
-            pecas_atualizadas.append(peca)
-
-        # Só persiste depois que todas as baixas foram validadas.
-        for peca in pecas_atualizadas:
-            self._repo_peca.salvar(peca)
-        ordem.aprovar()
+        ordem.remover_servico(servico_id)
         self._repo.salvar(ordem)
         return ordem
+
+
+class RemoverPecaDaOrdem(_CasoDeUsoDeOrdem):
+    """Remove uma peça da OS (enquanto ela está editável)."""
+
+    def executar(self, ordem_id: UUID, peca_id: UUID) -> OrdemServico:
+        ordem = self._carregar(ordem_id)
+        ordem.remover_peca(peca_id)
+        self._repo.salvar(ordem)
+        return ordem
+
+
+class AprovarOrdemServico:
+    """Aprova o orçamento e dá baixa no estoque das peças, numa única transação.
+
+    Toda a operação roda dentro de uma Unidade de Trabalho: a baixa do estoque de
+    todas as peças e a aprovação da OS são confirmadas juntas (commit) ou
+    desfeitas juntas (rollback). Além disso, o saldo de TODAS as peças é conferido
+    antes de qualquer baixa, de modo que nunca se desconta só parte das peças.
+    """
+
+    def __init__(self, unidade_trabalho: UnidadeDeTrabalho) -> None:
+        self._uow = unidade_trabalho
+
+    def executar(self, ordem_id: UUID) -> OrdemServico:
+        with self._uow as uow:
+            ordem = uow.ordens.buscar_por_id(ordem_id)
+            if ordem is None:
+                raise OrdemNaoEncontrada(f"Ordem de serviço não encontrada: {ordem_id}")
+
+            # Agrega a quantidade necessária por peça (evita baixa dupla).
+            necessario: dict[UUID, int] = defaultdict(int)
+            for item in ordem.itens_peca:
+                if item.peca_id is not None:
+                    necessario[item.peca_id] += item.quantidade
+
+            # 1) Carrega e confere o saldo de todas as peças (sem alterar nada).
+            pecas: dict[UUID, Peca] = {}
+            for peca_id, quantidade in necessario.items():
+                peca = uow.pecas.buscar_por_id(peca_id)
+                if peca is None:
+                    raise RegistroNaoEncontrado(f"Peça não encontrada: {peca_id}")
+                peca.verificar_saldo(quantidade)
+                pecas[peca_id] = peca
+
+            # 2) Aplica a baixa e aprova (tudo na mesma transação da UoW).
+            for peca_id, quantidade in necessario.items():
+                pecas[peca_id].baixar_estoque(quantidade)
+                uow.pecas.salvar(pecas[peca_id])
+            ordem.aprovar()
+            uow.ordens.salvar(ordem)
+            return ordem
 
 
 class AvancarStatusDaOrdem(_CasoDeUsoDeOrdem):

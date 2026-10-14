@@ -15,16 +15,21 @@ class StatusOS(str, Enum):
     EM_EXECUCAO = "Em execução"
     FINALIZADA = "Finalizada"
     ENTREGUE = "Entregue"
+    REJEITADA = "Rejeitada"
 
 
 # Para cada status, o conjunto de status para os quais ele pode avançar.
+# Observações do fluxo:
+# - Aguardando aprovação pode seguir para Em execução (aprovado) OU Rejeitada.
+# - Rejeitada pode voltar para Em diagnóstico (oficina ajusta o orçamento e reenvia).
 TRANSICOES: dict[StatusOS, set[StatusOS]] = {
     StatusOS.RECEBIDA: {StatusOS.EM_DIAGNOSTICO},
     StatusOS.EM_DIAGNOSTICO: {StatusOS.AGUARDANDO_APROVACAO},
-    StatusOS.AGUARDANDO_APROVACAO: {StatusOS.EM_EXECUCAO},
+    StatusOS.AGUARDANDO_APROVACAO: {StatusOS.EM_EXECUCAO, StatusOS.REJEITADA},
     StatusOS.EM_EXECUCAO: {StatusOS.FINALIZADA},
     StatusOS.FINALIZADA: {StatusOS.ENTREGUE},
     StatusOS.ENTREGUE: set(),
+    StatusOS.REJEITADA: {StatusOS.EM_DIAGNOSTICO},
 }
 
 

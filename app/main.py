@@ -11,7 +11,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.domain.exceptions import ErroDeDominio, RegistroNaoEncontrado
+from app.domain.exceptions import (
+    ErroDeDominio,
+    RegistroDuplicado,
+    RegistroNaoEncontrado,
+)
 from app.infrastructure.db.base import criar_tabelas
 from app.interfaces import auth, cadastros, health, ordens, relatorios
 
@@ -46,6 +50,10 @@ def create_app() -> FastAPI:
     @app.exception_handler(RegistroNaoEncontrado)
     async def _nao_encontrado(request: Request, exc: RegistroNaoEncontrado):
         return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(RegistroDuplicado)
+    async def _duplicado(request: Request, exc: RegistroDuplicado):
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     @app.exception_handler(ErroDeDominio)
     async def _erro_de_dominio(request: Request, exc: ErroDeDominio):
