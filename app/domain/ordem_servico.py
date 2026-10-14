@@ -10,7 +10,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from app.domain.exceptions import OperacaoInvalida, TransicaoInvalida
+from app.domain.exceptions import (
+    OperacaoInvalida,
+    RegistroNaoEncontrado,
+    TransicaoInvalida,
+)
 from app.domain.itens import ItemPeca, ItemServico
 from app.domain.status_os import StatusOS, pode_transicionar
 from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
@@ -125,6 +129,22 @@ class OrdemServico:
         self._exige_status_editavel()
         self._itens_peca.append(ItemPeca(descricao, preco_unitario, quantidade, peca_id))
 
+    def remover_servico(self, servico_id: UUID) -> None:
+        self._exige_status_editavel()
+        for i, item in enumerate(self._itens_servico):
+            if item.servico_id == servico_id:
+                del self._itens_servico[i]
+                return
+        raise RegistroNaoEncontrado(f"Serviço não consta nesta OS: {servico_id}")
+
+    def remover_peca(self, peca_id: UUID) -> None:
+        self._exige_status_editavel()
+        for i, item in enumerate(self._itens_peca):
+            if item.peca_id == peca_id:
+                del self._itens_peca[i]
+                return
+        raise RegistroNaoEncontrado(f"Peça não consta nesta OS: {peca_id}")
+
     def calcular_orcamento(self) -> Dinheiro:
         total = Dinheiro.zero(self._moeda)
         for servico in self._itens_servico:
@@ -150,11 +170,14 @@ class OrdemServico:
         self._iniciado_execucao_em = _agora()
 
     def rejeitar(self) -> None:
-        if self._status != StatusOS.AGUARDANDO_APROVACAO:
-            raise TransicaoInvalida(
-                "Só é possível rejeitar um orçamento que está aguardando aprovação."
-            )
+        """Cliente recusa o orçamento: a OS vai para o status Rejeitada."""
+        self._mudar_status(StatusOS.REJEITADA)
         self._aprovado = False
+
+    def reabrir_diagnostico(self) -> None:
+        """Reabre uma OS rejeitada para ajustar o orçamento e reenviar."""
+        self._mudar_status(StatusOS.EM_DIAGNOSTICO)
+        self._aprovado = None
 
     def concluir_execucao(self) -> None:
         self._mudar_status(StatusOS.FINALIZADA)

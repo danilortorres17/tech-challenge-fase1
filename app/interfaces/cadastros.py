@@ -42,20 +42,24 @@ def _cliente_out(c: Cliente) -> ClienteOut:
     return ClienteOut(id=str(c.id), documento=c.documento.formatado(), nome=c.nome)
 
 
+def _crud_clientes(repo: RepositorioCrud) -> CrudCadastro:
+    return CrudCadastro(repo, "Cliente", chave=lambda c: c.documento.valor)
+
+
 @clientes.post("", status_code=status.HTTP_201_CREATED, response_model=ClienteOut)
 def criar_cliente(dados: ClienteIn, repo: RepositorioCrud = Depends(obter_repositorio_cliente)):
     cliente = Cliente(CpfCnpj(dados.documento), dados.nome)
-    return _cliente_out(CrudCadastro(repo, "Cliente").criar(cliente))
+    return _cliente_out(_crud_clientes(repo).criar(cliente))
 
 
 @clientes.get("", response_model=list[ClienteOut])
 def listar_clientes(repo: RepositorioCrud = Depends(obter_repositorio_cliente)):
-    return [_cliente_out(c) for c in CrudCadastro(repo, "Cliente").listar()]
+    return [_cliente_out(c) for c in _crud_clientes(repo).listar()]
 
 
 @clientes.get("/{cliente_id}", response_model=ClienteOut)
 def obter_cliente(cliente_id: UUID, repo: RepositorioCrud = Depends(obter_repositorio_cliente)):
-    return _cliente_out(CrudCadastro(repo, "Cliente").obter(cliente_id))
+    return _cliente_out(_crud_clientes(repo).obter(cliente_id))
 
 
 @clientes.put("/{cliente_id}", response_model=ClienteOut)
@@ -63,12 +67,12 @@ def atualizar_cliente(
     cliente_id: UUID, dados: ClienteIn, repo: RepositorioCrud = Depends(obter_repositorio_cliente)
 ):
     cliente = Cliente(CpfCnpj(dados.documento), dados.nome, cliente_id)
-    return _cliente_out(CrudCadastro(repo, "Cliente").atualizar(cliente))
+    return _cliente_out(_crud_clientes(repo).atualizar(cliente))
 
 
 @clientes.delete("/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remover_cliente(cliente_id: UUID, repo: RepositorioCrud = Depends(obter_repositorio_cliente)):
-    CrudCadastro(repo, "Cliente").remover(cliente_id)
+    _crud_clientes(repo).remover(cliente_id)
 
 
 # ------------------------------- Veículos ----------------------------------
@@ -84,23 +88,27 @@ def _veiculo_out(v: Veiculo) -> VeiculoOut:
     )
 
 
+def _crud_veiculos(repo: RepositorioCrud) -> CrudCadastro:
+    return CrudCadastro(repo, "Veículo", chave=lambda v: v.placa.valor)
+
+
 @veiculos.post("", status_code=status.HTTP_201_CREATED, response_model=VeiculoOut)
 def criar_veiculo(dados: VeiculoIn, repo: RepositorioCrud = Depends(obter_repositorio_veiculo)):
     veiculo = Veiculo(
         Placa(dados.placa), dados.marca, dados.modelo, dados.ano,
         UUID(dados.cliente_id) if dados.cliente_id else None,
     )
-    return _veiculo_out(CrudCadastro(repo, "Veículo").criar(veiculo))
+    return _veiculo_out(_crud_veiculos(repo).criar(veiculo))
 
 
 @veiculos.get("", response_model=list[VeiculoOut])
 def listar_veiculos(repo: RepositorioCrud = Depends(obter_repositorio_veiculo)):
-    return [_veiculo_out(v) for v in CrudCadastro(repo, "Veículo").listar()]
+    return [_veiculo_out(v) for v in _crud_veiculos(repo).listar()]
 
 
 @veiculos.get("/{veiculo_id}", response_model=VeiculoOut)
 def obter_veiculo(veiculo_id: UUID, repo: RepositorioCrud = Depends(obter_repositorio_veiculo)):
-    return _veiculo_out(CrudCadastro(repo, "Veículo").obter(veiculo_id))
+    return _veiculo_out(_crud_veiculos(repo).obter(veiculo_id))
 
 
 @veiculos.put("/{veiculo_id}", response_model=VeiculoOut)
@@ -111,12 +119,12 @@ def atualizar_veiculo(
         Placa(dados.placa), dados.marca, dados.modelo, dados.ano,
         UUID(dados.cliente_id) if dados.cliente_id else None, veiculo_id,
     )
-    return _veiculo_out(CrudCadastro(repo, "Veículo").atualizar(veiculo))
+    return _veiculo_out(_crud_veiculos(repo).atualizar(veiculo))
 
 
 @veiculos.delete("/{veiculo_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remover_veiculo(veiculo_id: UUID, repo: RepositorioCrud = Depends(obter_repositorio_veiculo)):
-    CrudCadastro(repo, "Veículo").remover(veiculo_id)
+    _crud_veiculos(repo).remover(veiculo_id)
 
 
 # ------------------------------- Serviços ----------------------------------

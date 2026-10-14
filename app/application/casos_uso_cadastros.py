@@ -5,24 +5,47 @@ ganha operações específicas de estoque (entrada e baixa).
 """
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import Callable, Generic, Optional, TypeVar
 from uuid import UUID
 
 from app.domain.cadastros import Peca
-from app.domain.exceptions import RegistroNaoEncontrado
+from app.domain.exceptions import RegistroDuplicado, RegistroNaoEncontrado
 from app.domain.repositorios import RepositorioCrud
 
 T = TypeVar("T")
 
 
 class CrudCadastro(Generic[T]):
-    """CRUD genérico: criar, obter, listar, atualizar e remover."""
+    """CRUD genérico: criar, obter, listar, atualizar e remover.
 
-    def __init__(self, repositorio: RepositorioCrud[T], nome: str = "Registro") -> None:
+    Se receber `chave` (uma função que extrai a chave natural do item, p. ex. o
+    CPF do cliente ou a placa do veículo), garante que essa chave seja única:
+    criar ou atualizar para uma chave já usada por outro registro lança
+    RegistroDuplicado.
+    """
+
+    def __init__(
+        self,
+        repositorio: RepositorioCrud[T],
+        nome: str = "Registro",
+        chave: Optional[Callable[[T], str]] = None,
+    ) -> None:
         self._repo = repositorio
         self._nome = nome
+        self._chave = chave
+
+    def _garantir_chave_unica(self, item: T) -> None:
+        if self._chave is None:
+            return
+        valor = self._chave(item)
+        for existente in self._repo.listar():
+            if self._chave(existente) == valor and existente.id != item.id:  # type: ignore[attr-defined]
+                raise RegistroDuplicado(
+                    f"Já existe {self._nome.lower()} com esse identificador: {valor}"
+                )
 
     def criar(self, item: T) -> T:
+        self._garantir_chave_unica(item)
         self._repo.salvar(item)
         return item
 
@@ -37,6 +60,7 @@ class CrudCadastro(Generic[T]):
 
     def atualizar(self, item: T) -> T:
         self.obter(item.id)  # garante que existe
+        self._garantir_chave_unica(item)
         self._repo.salvar(item)
         return item
 

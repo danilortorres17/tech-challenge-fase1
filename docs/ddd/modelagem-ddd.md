@@ -39,6 +39,8 @@ Regras: não gerar orçamento sem ao menos 1 serviço ou peça; orçamento = som
 
 ```
 Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Finalizada → Entregue
+                                   │
+                                   └── (rejeitada) → Rejeitada → (reabrir) → Em diagnóstico
 ```
 
 | # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Transição de status |
@@ -46,13 +48,14 @@ Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Fi
 | 1 | 🟨 Mecânico | Registrar diagnóstico | Diagnóstico registrado | Recebida → Em diagnóstico |
 | 2 | 🟪 Política: orçamento enviado | — | — | Em diagnóstico → Aguardando aprovação |
 | 3 | 🟨 Cliente | Aprovar orçamento | Orçamento aprovado | Aguardando aprovação → Em execução |
-| 3b | 🟨 Cliente | Rejeitar orçamento | Orçamento rejeitado | **história alternativa** (fluxo separado) |
-| 4 | 🟪 Política: orçamento aprovado | Baixar peças do estoque | Estoque baixado | em **transação** com a aprovação |
+| 3b | 🟨 Cliente | Rejeitar orçamento | Orçamento rejeitado | Aguardando aprovação → **Rejeitada** |
+| 3c | 🟨 Atendente | Reabrir para ajuste | OS reaberta | Rejeitada → Em diagnóstico (ajusta e reenvia) |
+| 4 | 🟪 Política: orçamento aprovado | Baixar peças do estoque | Estoque baixado | em **transação única** com a aprovação (Unit of Work) |
 | 5 | 🟨 Mecânico | Concluir serviços | Serviços concluídos | Em execução → Finalizada |
 | 6 | 🟨 Atendente | Entregar veículo | Veículo entregue | Finalizada → Entregue |
 | 7 | 🟨 Cliente | Consultar andamento | — | 🟩 read model: status da OS — **endpoint público** |
 
-Regras: só entra em "Em execução" após orçamento aprovado; transições só na ordem acima (pular etapa = erro de domínio).
+Regras: só entra em "Em execução" após orçamento aprovado; transições só na ordem acima (pular etapa = erro de domínio). Uma OS rejeitada pode ser reaberta para ajuste do orçamento e reenvio.
 
 **Evento pivotal:** `Orçamento aprovado` marca a virada de negociação → execução. Forte indicador de fronteira de contexto.
 
@@ -113,5 +116,22 @@ Conexão entre contextos: a política `Orçamento aprovado` (Atendimento) dispar
 2. Não gerar orçamento sem ao menos um serviço ou peça.
 3. Transições de status só na ordem definida — pular etapa lança exceção de domínio.
 4. OS só vai para "Em execução" depois do orçamento aprovado.
-5. Baixa de estoque acontece na aprovação do orçamento, dentro de uma transação; não aprova se faltar saldo.
-6. CPF/CNPJ e placa precisam ser válidos antes de persistir (validação no objeto de valor).
+5. Rejeição leva a OS ao status **Rejeitada**; dela é possível reabrir para "Em diagnóstico", ajustar o orçamento e reenviar.
+6. Serviços e peças só podem ser incluídos ou removidos enquanto a OS está editável (Recebida ou Em diagnóstico).
+7. A baixa de estoque acontece na aprovação do orçamento, dentro de uma **transação única** (padrão Unit of Work): baixa de todas as peças + aprovação são confirmadas juntas ou desfeitas juntas; não aprova se faltar saldo em qualquer peça.
+8. CPF/CNPJ e placa precisam ser válidos antes de persistir (validação no objeto de valor).
+9. CPF/CNPJ (cliente) e placa (veículo) são **únicos**: cadastrar um já existente retorna conflito (HTTP 409).
+10. O ano do veículo deve estar numa faixa plausível (1900 até o ano seguinte ao atual).
+11. Ao abrir uma OS, se o veículo pertence a um cliente, deve ser o mesmo cliente da OS.
+
+## Relação documentação ↔ código
+
+| Elemento do modelo | Onde está no código |
+|--------------------|---------------------|
+| Máquina de status (incl. Rejeitada) | `app/domain/status_os.py` |
+| Agregado e regras da OS | `app/domain/ordem_servico.py` |
+| Objetos de valor (CpfCnpj, Placa, Dinheiro) | `app/domain/value_objects/` |
+| Estoque da peça (saldo, baixa, reposição) | `app/domain/cadastros.py` (`Peca`) |
+| Transação única da aprovação (Unit of Work) | `app/domain/repositorios.py` (porta) + `app/infrastructure/unit_of_work.py` |
+| Unicidade de CPF/placa e validações | `app/application/casos_uso_cadastros.py`, `app/domain/cadastros.py` |
+| Fluxos expostos (REST) | `app/interfaces/ordens.py`, `app/interfaces/cadastros.py` |

@@ -6,7 +6,11 @@ são sobrescritas por repositórios apontando para um banco em memória.
 from __future__ import annotations
 
 from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
-from app.domain.repositorios import OrdemServicoRepositorio, RepositorioCrud
+from app.domain.repositorios import (
+    OrdemServicoRepositorio,
+    RepositorioCrud,
+    UnidadeDeTrabalho,
+)
 from app.infrastructure.db.base import SessionLocal
 from app.infrastructure.repositorio_sqlalchemy import RepositorioOrdemServicoSQLAlchemy
 from app.infrastructure.repositorios_crud import (
@@ -15,10 +19,15 @@ from app.infrastructure.repositorios_crud import (
     RepositorioServicoSQLAlchemy,
     RepositorioVeiculoSQLAlchemy,
 )
+from app.infrastructure.unit_of_work import UnidadeDeTrabalhoSQLAlchemy
 
 
 def obter_repositorio() -> OrdemServicoRepositorio:
     return RepositorioOrdemServicoSQLAlchemy(SessionLocal)
+
+
+def obter_unidade_trabalho() -> UnidadeDeTrabalho:
+    return UnidadeDeTrabalhoSQLAlchemy(SessionLocal)
 
 
 def obter_repositorio_cliente() -> RepositorioCrud[Cliente]:
