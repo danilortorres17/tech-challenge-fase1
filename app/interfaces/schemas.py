@@ -1,4 +1,4 @@
-"""Schemas Pydantic — o contrato de entrada e saída da API.
+"""Schemas Pydantic - o contrato de entrada e saída da API.
 
 Separados das entidades de domínio: traduzem JSON <-> tipos do domínio.
 Valores monetários trafegam como texto com 2 casas, para não perder precisão.

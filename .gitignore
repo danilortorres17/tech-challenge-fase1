@@ -7,7 +7,7 @@ venv/
 .coverage
 htmlcov/
 
-# Banco de dados local (SQLite) — gerado em tempo de execução
+# Banco de dados local (SQLite) - gerado em tempo de execução
 *.db
 *.db-journal
 *.db-wal
@@ -15,9 +15,6 @@ htmlcov/
 
 # Ambiente / segredos (NUNCA commitar)
 .env
-
-# Ferramenta local de IA (não vai para o repositório)
-CLAUDE.md
 
 # Editores
 .vscode/

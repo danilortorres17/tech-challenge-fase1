@@ -13,6 +13,5 @@ htmlcov
 *.db-wal
 *.db-shm
 .env
-CLAUDE.md
 .vscode
 .idea

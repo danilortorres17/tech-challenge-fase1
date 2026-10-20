@@ -1,4 +1,4 @@
-"""Objeto de valor Dinheiro — valores monetários.
+"""Objeto de valor Dinheiro - valores monetários.
 
 Usa Decimal (nunca float) para evitar erros de arredondamento em preços.
 Imutável; operações retornam um novo Dinheiro.

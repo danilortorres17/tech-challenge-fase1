@@ -1,4 +1,4 @@
-# Linguagem Ubíqua — Oficina Mecânica
+# Linguagem Ubíqua - Oficina Mecânica
 
 > Glossário dos termos do domínio. É a linguagem única usada no negócio, na
 > documentação e no código (nomes de classes, métodos e endpoints). Sempre que
@@ -19,7 +19,7 @@
 | **Orçamento** | Soma dos serviços e peças da OS, submetida ao cliente para aprovação. | `Orcamento` (VO) |
 | **Aprovação** | Decisão do cliente que autoriza a execução e destrava a mudança de status. | evento `Orçamento aprovado` |
 | **Status da OS** | Situação atual da ordem no fluxo de atendimento. | `StatusOS` (VO) |
-| **Diagnóstico** | Avaliação técnica do veículo pelo mecânico. | — |
+| **Diagnóstico** | Avaliação técnica do veículo pelo mecânico. | - |
 | **Tempo médio de execução** | Indicador: média de tempo entre início e fim da execução das OS. | consulta/relatório |
 
 ## Status da Ordem de Serviço

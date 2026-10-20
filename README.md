@@ -1,13 +1,13 @@
-# Oficina — Sistema Integrado de Atendimento e Execução de Serviços
+# Oficina - Sistema Integrado de Atendimento e Execução de Serviços
 
 MVP do back-end de uma oficina mecânica, desenvolvido para o Tech Challenge
-(Fase 1 — SOAT). Aplica Domain-Driven Design, arquitetura em camadas, testes
+(Fase 1 - SOAT). Aplica Domain-Driven Design, arquitetura em camadas, testes
 automatizados e boas práticas de segurança.
 
 ## Objetivo do projeto
 
 Gerir ordens de serviço, clientes e peças de uma oficina, permitindo acompanhar
-o andamento dos serviços em tempo real e manter a gestão interna organizada.
+o andamento atualizado dos serviços e manter a gestão interna organizada.
 
 ## Descrição da solução
 
@@ -81,7 +81,7 @@ A cobertura é exibida no terminal ao final da execução.
 
 ## Qualidade e segurança
 
-- **Cobertura de testes:** 98% (mínimo exigido: 80%). Evidência em
+- **Cobertura de testes:** 95% (mínimo exigido: 80%). Evidência em
   [`docs/qualidade/cobertura.md`](docs/qualidade/cobertura.md).
 - **Análise de segurança:** `bandit` (código) e `pip-audit` (dependências),
   ambos sem apontamentos. Relatório em
@@ -122,13 +122,13 @@ As credenciais e o segredo do JWT são configuráveis por variáveis de ambiente
 
 ## Estrutura dos principais diretórios
 
-- `app/` — código da aplicação, separado por camadas
-- `tests/` — testes unitários e de integração
-- `docs/` — requisitos, guia do projeto, documentação DDD e ADRs
+- `app/` - código da aplicação, separado por camadas
+- `tests/` - testes unitários e de integração
+- `docs/` - requisitos, guia do projeto, documentação DDD e ADRs
 
 ## Documentação DDD
 
-Ver [`docs/ddd/`](docs/ddd/) — Event Storming, modelagem e linguagem ubíqua.
+Ver [`docs/ddd/`](docs/ddd/) - Event Storming, modelagem e linguagem ubíqua.
 
 ## Vídeo da entrega
 

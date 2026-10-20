@@ -1,4 +1,4 @@
-"""Objeto de valor Placa — identificação do veículo.
+"""Objeto de valor Placa - identificação do veículo.
 
 Aceita o formato antigo (AAA9999) e o Mercosul (AAA9A99). Normaliza para
 maiúsculas e sem separadores.

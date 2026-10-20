@@ -1,6 +1,6 @@
 """Entidades de cadastro (gestão administrativa): Cliente, Veículo, Serviço, Peça.
 
-São entidades com identidade própria (id) e mutáveis — manipuladas pelos CRUDs.
+São entidades com identidade própria (id) e mutáveis - manipuladas pelos CRUDs.
 Validações de formato ficam nos objetos de valor (CpfCnpj, Placa, Dinheiro).
 """
 from __future__ import annotations
@@ -35,7 +35,7 @@ class Veiculo:
         ano_maximo = datetime.now(timezone.utc).year + 1  # permite modelo do ano seguinte
         if not (_ANO_MINIMO <= self.ano <= ano_maximo):
             raise AnoInvalido(
-                f"Ano do veículo fora da faixa ({_ANO_MINIMO}–{ano_maximo}): {self.ano}."
+                f"Ano do veículo fora da faixa ({_ANO_MINIMO}-{ano_maximo}): {self.ano}."
             )
 
 

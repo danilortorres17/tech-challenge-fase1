@@ -1,4 +1,4 @@
-"""Objeto de valor CpfCnpj — documento de identificação do cliente.
+"""Objeto de valor CpfCnpj - documento de identificação do cliente.
 
 Aceita CPF (11 dígitos) ou CNPJ (14 dígitos), validando os dígitos
 verificadores. Guarda apenas os dígitos; a formatação é derivada.

@@ -26,7 +26,7 @@ def client() -> TestClient:
     )
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
-    # A autenticação NÃO é sobrescrita — é o que estamos testando.
+    # A autenticação NÃO é sobrescrita - é o que estamos testando.
     app.dependency_overrides[obter_repositorio] = lambda: RepositorioOrdemServicoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_cliente] = lambda: RepositorioClienteSQLAlchemy(factory)
     yield TestClient(app)

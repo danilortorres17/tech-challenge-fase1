@@ -58,7 +58,7 @@ class UnidadeDeTrabalhoEmMemoria(UnidadeDeTrabalho):
     """Unidade de Trabalho para testes: agrupa repositórios em memória.
 
     Como os repositórios em memória guardam os próprios objetos, não há uma
-    transação real para confirmar ou desfazer — commit/rollback são no-ops. A
+    transação real para confirmar ou desfazer - commit/rollback são no-ops. A
     atomicidade da aprovação, nos testes, é garantida pela conferência prévia de
     saldo no caso de uso (nada é baixado se faltar estoque em qualquer peça).
     """

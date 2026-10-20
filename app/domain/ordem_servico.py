@@ -1,4 +1,4 @@
-"""Agregado Ordem de Serviço — o núcleo do domínio.
+"""Agregado Ordem de Serviço - o núcleo do domínio.
 
 A OrdemServico é a raiz do agregado: só ela altera o próprio estado. Quem está
 de fora lê (status, orçamento) ou solicita uma mudança por um de seus métodos,
