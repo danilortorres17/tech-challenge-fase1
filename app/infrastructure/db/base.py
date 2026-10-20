@@ -24,7 +24,7 @@ class RepositorioSQLAlchemy:
 
     Dois modos de uso:
     - Recebendo uma `session` pronta (de uma Unidade de Trabalho): opera nela e
-      NÃO dá commit — quem abriu a transação decide confirmar ou desfazer tudo.
+      NÃO dá commit - quem abriu a transação decide confirmar ou desfazer tudo.
     - Recebendo apenas o `session_factory` (uso simples de CRUD): abre a própria
       sessão e confirma (commit) a cada operação.
     """

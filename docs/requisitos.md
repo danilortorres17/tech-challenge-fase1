@@ -1,4 +1,4 @@
-# Requisitos — Tech Challenge Fase 1 (enunciado destilado)
+# Requisitos - Tech Challenge Fase 1 (enunciado destilado)
 
 > Resumo fiel do enunciado oficial, para consulta rápida durante o desenvolvimento.
 > Em qualquer divergência, vale o PDF oficial do curso.
@@ -59,7 +59,7 @@ aplicando **DDD**, boas práticas de **qualidade** e **segurança**.
 ## Entregáveis (um único PDF com todos os links clicáveis)
 
 ### 1. Identificação (1ª página do PDF)
-Curso (SOAT — Software Architecture), Fase (1), número do grupo, nome completo e
+Curso (SOAT - Software Architecture), Fase (1), número do grupo, nome completo e
 RM de todos os integrantes, username do Discord, linguagem e tecnologias.
 Informar **branch + hash do commit** da entrega final (a avaliação considera só essa versão).
 
@@ -67,7 +67,7 @@ Informar **branch + hash do commit** da entrega final (a avaliação considera s
 Público durante toda a correção; versão identificada por branch/tag/hash; código
 igual ao vídeo e à documentação; sem credenciais/tokens; README completo;
 instruções de execução local; testes com ≥80%; doc da API (Swagger/OpenAPI);
-relatório de análise de vulnerabilidades. **`main` protegida — tudo entra por PR.**
+relatório de análise de vulnerabilidades. **`main` protegida - tudo entra por PR.**
 
 ### 3. README (conteúdo mínimo)
 Objetivo; descrição da solução; arquitetura; tecnologias; pré-requisitos;

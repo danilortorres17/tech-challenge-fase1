@@ -1,6 +1,6 @@
 """Rota de health check.
 
-Camada de interface: expõe endpoints HTTP. Não contém regra de negócio —
+Camada de interface: expõe endpoints HTTP. Não contém regra de negócio -
 apenas traduz requisições em respostas. Serve de prova de vida da aplicação.
 """
 from fastapi import APIRouter

@@ -1,4 +1,4 @@
-"""Modelos ORM (SQLAlchemy) — como os dados são guardados no banco.
+"""Modelos ORM (SQLAlchemy) - como os dados são guardados no banco.
 
 São separados das entidades de domínio de propósito: o domínio não conhece o
 banco. O repositório faz a tradução entre os dois mundos.

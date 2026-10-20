@@ -1,6 +1,6 @@
 """Itens que compõem uma Ordem de Serviço: serviços e peças.
 
-São entidades internas do agregado OrdemServico. Imutáveis — qualquer mudança
+São entidades internas do agregado OrdemServico. Imutáveis - qualquer mudança
 é feita adicionando/removendo itens na OS, não editando o item no lugar.
 Podem referenciar (por id) um item do catálogo de cadastros (Serviço/Peça).
 """

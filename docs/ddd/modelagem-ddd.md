@@ -1,4 +1,4 @@
-# Modelagem DDD — Oficina Mecânica (Event Storming)
+# Modelagem DDD - Oficina Mecânica (Event Storming)
 
 > Este documento é o roteiro do Event Storming: cada linha é um cartão a colocar
 > no board do Miro. Depois de montar o board, exporte-o para
@@ -19,7 +19,7 @@ Gramática: **Ator → Comando → Evento**. Sem ator, **Política → Comando �
 
 ---
 
-## Fluxo 1 — Criação da Ordem de Serviço
+## Fluxo 1 - Criação da Ordem de Serviço
 
 | # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Observações |
 |---|----------------|--------------|-------------|-------------|
@@ -35,7 +35,7 @@ Regras: não gerar orçamento sem ao menos 1 serviço ou peça; orçamento = som
 
 ---
 
-## Fluxo 2 — Acompanhamento da Ordem de Serviço (máquina de status)
+## Fluxo 2 - Acompanhamento da Ordem de Serviço (máquina de status)
 
 ```
 Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Finalizada → Entregue
@@ -46,14 +46,14 @@ Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Fi
 | # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Transição de status |
 |---|----------------|--------------|-------------|---------------------|
 | 1 | 🟨 Mecânico | Registrar diagnóstico | Diagnóstico registrado | Recebida → Em diagnóstico |
-| 2 | 🟪 Política: orçamento enviado | — | — | Em diagnóstico → Aguardando aprovação |
+| 2 | 🟪 Política: orçamento enviado | - | - | Em diagnóstico → Aguardando aprovação |
 | 3 | 🟨 Cliente | Aprovar orçamento | Orçamento aprovado | Aguardando aprovação → Em execução |
 | 3b | 🟨 Cliente | Rejeitar orçamento | Orçamento rejeitado | Aguardando aprovação → **Rejeitada** |
 | 3c | 🟨 Atendente | Reabrir para ajuste | OS reaberta | Rejeitada → Em diagnóstico (ajusta e reenvia) |
 | 4 | 🟪 Política: orçamento aprovado | Baixar peças do estoque | Estoque baixado | em **transação única** com a aprovação (Unit of Work) |
 | 5 | 🟨 Mecânico | Concluir serviços | Serviços concluídos | Em execução → Finalizada |
 | 6 | 🟨 Atendente | Entregar veículo | Veículo entregue | Finalizada → Entregue |
-| 7 | 🟨 Cliente | Consultar andamento | — | 🟩 read model: status da OS — **endpoint público** |
+| 7 | 🟨 Cliente | Consultar andamento | - | 🟩 read model: status da OS - **endpoint público** |
 
 Regras: só entra em "Em execução" após orçamento aprovado; transições só na ordem acima (pular etapa = erro de domínio). Uma OS rejeitada pode ser reaberta para ajuste do orçamento e reenvio.
 
@@ -61,7 +61,7 @@ Regras: só entra em "Em execução" após orçamento aprovado; transições só
 
 ---
 
-## Fluxo 3 — Gestão de Peças e Insumos
+## Fluxo 3 - Gestão de Peças e Insumos
 
 | # | Ator / Gatilho | Comando (🟦) | Evento (🟧) | Observações |
 |---|----------------|--------------|-------------|-------------|
@@ -76,7 +76,7 @@ Regra: não aprovar orçamento se alguma peça estiver sem saldo suficiente.
 
 ## Agregados, Entidades e Objetos de Valor
 
-### Agregado `OrdemServico` (raiz) — núcleo do sistema
+### Agregado `OrdemServico` (raiz) - núcleo do sistema
 - **Entidades internas:** `ItemServico`, `ItemPeca`
 - **Objetos de valor:** `StatusOS`, `Orcamento`
 - **Responsabilidade:** só o agregado altera o próprio status e aplica as regras de transição. Quem está fora solicita via comando.
@@ -114,7 +114,7 @@ Conexão entre contextos: a política `Orçamento aprovado` (Atendimento) dispar
 
 1. Orçamento = soma dos serviços + soma das peças.
 2. Não gerar orçamento sem ao menos um serviço ou peça.
-3. Transições de status só na ordem definida — pular etapa lança exceção de domínio.
+3. Transições de status só na ordem definida - pular etapa lança exceção de domínio.
 4. OS só vai para "Em execução" depois do orçamento aprovado.
 5. Rejeição leva a OS ao status **Rejeitada**; dela é possível reabrir para "Em diagnóstico", ajustar o orçamento e reenviar.
 6. Serviços e peças só podem ser incluídos ou removidos enquanto a OS está editável (Recebida ou Em diagnóstico).

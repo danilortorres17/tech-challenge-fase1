@@ -1,4 +1,4 @@
-# ADR 0001 — Escolha do banco de dados
+# ADR 0001 - Escolha do banco de dados
 
 - **Status:** Aceito
 - **Data:** 2026-10-13
@@ -18,10 +18,10 @@ Adotar **SQLite** como banco de dados do MVP.
 
 ## Alternativas consideradas
 
-- **PostgreSQL** — robusto e padrão de mercado para produção, mas exige um
+- **PostgreSQL** - robusto e padrão de mercado para produção, mas exige um
   container/serviço adicional, configuração de credenciais e mais tempo de
   setup do que o MVP justifica nesta fase.
-- **MySQL** — semelhante ao PostgreSQL em custo de setup, sem vantagem clara
+- **MySQL** - semelhante ao PostgreSQL em custo de setup, sem vantagem clara
   para o escopo atual.
 
 ## Justificativa
@@ -35,7 +35,7 @@ Adotar **SQLite** como banco de dados do MVP.
 - **Troca barata no futuro:** o acesso a dados é feito por uma *porta* de
   repositório (`OrdemServicoRepositorio`) no domínio, com a implementação em
   SQLAlchemy isolada na infraestrutura. Migrar para PostgreSQL significa trocar
-  o `DATABASE_URL` e, se preciso, a implementação do repositório — **sem tocar
+  o `DATABASE_URL` e, se preciso, a implementação do repositório - **sem tocar
   no domínio nem nos casos de uso**.
 
 ## Consequências

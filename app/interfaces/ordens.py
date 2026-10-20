@@ -4,7 +4,7 @@ Camada de interface: traduz requisições HTTP em chamadas de casos de uso e
 monta as respostas. Não contém regra de negócio.
 
 As rotas administrativas exigem autenticação (JWT). A consulta de andamento de
-uma OS é pública — é o acompanhamento do cliente.
+uma OS é pública - é o acompanhamento do cliente.
 """
 from __future__ import annotations
 

@@ -33,7 +33,7 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         description=(
             "Sistema Integrado de Atendimento e Execução de Serviços "
-            "de uma oficina mecânica — MVP do back-end (Tech Challenge Fase 1)."
+            "de uma oficina mecânica - MVP do back-end (Tech Challenge Fase 1)."
         ),
         lifespan=lifespan,
     )
