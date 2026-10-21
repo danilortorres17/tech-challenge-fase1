@@ -16,7 +16,9 @@ class Settings:
         self.database_url: str = os.getenv("DATABASE_URL", "sqlite:///./oficina.db")
 
         # Autenticação JWT
-        self.jwt_secret: str = os.getenv("JWT_SECRET", "troque-este-segredo-em-producao")
+        self.jwt_secret: str = os.getenv(
+            "JWT_SECRET", "troque-por-um-valor-secreto-bem-grande"
+        )
         self.jwt_algoritmo: str = os.getenv("JWT_ALGORITMO", "HS256")
         self.jwt_expira_min: int = int(os.getenv("JWT_EXPIRA_MIN", "60"))
 

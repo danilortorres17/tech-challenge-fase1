@@ -56,6 +56,17 @@ def test_crud_cliente(client) -> None:
     assert client.get(f"/clientes/{cid}").status_code == 404
 
 
+def test_veiculo_com_cliente_inexistente_retorna_404(client) -> None:
+    r = client.post(
+        "/veiculos",
+        json={
+            "placa": "ABC1D23", "marca": "VW", "modelo": "Gol", "ano": 2020,
+            "cliente_id": "00000000-0000-0000-0000-000000000000",
+        },
+    )
+    assert r.status_code == 404
+
+
 def test_crud_veiculo(client) -> None:
     criado = client.post(
         "/veiculos",

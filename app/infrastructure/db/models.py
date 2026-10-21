@@ -74,7 +74,7 @@ class ClienteModel(Base):
     __tablename__ = "clientes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    documento: Mapped[str] = mapped_column(String(14))
+    documento: Mapped[str] = mapped_column(String(14), unique=True)
     nome: Mapped[str] = mapped_column(String(120))
 
 
@@ -82,7 +82,7 @@ class VeiculoModel(Base):
     __tablename__ = "veiculos"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    placa: Mapped[str] = mapped_column(String(7))
+    placa: Mapped[str] = mapped_column(String(7), unique=True)
     marca: Mapped[str] = mapped_column(String(60))
     modelo: Mapped[str] = mapped_column(String(60))
     ano: Mapped[int] = mapped_column(Integer)

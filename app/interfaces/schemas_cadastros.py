@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +25,7 @@ class VeiculoIn(BaseModel):
     marca: str = Field(examples=["Volkswagen"])
     modelo: str = Field(examples=["Gol"])
     ano: int = Field(examples=[2020])
-    cliente_id: str | None = None
+    cliente_id: UUID | None = None
 
 
 class VeiculoOut(BaseModel):

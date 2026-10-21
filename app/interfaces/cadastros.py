@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.application.casos_uso_cadastros import ControleDeEstoque, CrudCadastro
 from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
+from app.domain.exceptions import RegistroNaoEncontrado
 from app.domain.repositorios import RepositorioCrud
 from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
 from app.interfaces.auth import usuario_atual
@@ -92,11 +93,20 @@ def _crud_veiculos(repo: RepositorioCrud) -> CrudCadastro:
     return CrudCadastro(repo, "Veículo", chave=lambda v: v.placa.valor)
 
 
+def _exige_cliente_existente(cliente_id, repo_cliente: RepositorioCrud) -> None:
+    if cliente_id is not None and repo_cliente.buscar_por_id(cliente_id) is None:
+        raise RegistroNaoEncontrado(f"Cliente não encontrado: {cliente_id}")
+
+
 @veiculos.post("", status_code=status.HTTP_201_CREATED, response_model=VeiculoOut)
-def criar_veiculo(dados: VeiculoIn, repo: RepositorioCrud = Depends(obter_repositorio_veiculo)):
+def criar_veiculo(
+    dados: VeiculoIn,
+    repo: RepositorioCrud = Depends(obter_repositorio_veiculo),
+    repo_cliente: RepositorioCrud = Depends(obter_repositorio_cliente),
+):
+    _exige_cliente_existente(dados.cliente_id, repo_cliente)
     veiculo = Veiculo(
-        Placa(dados.placa), dados.marca, dados.modelo, dados.ano,
-        UUID(dados.cliente_id) if dados.cliente_id else None,
+        Placa(dados.placa), dados.marca, dados.modelo, dados.ano, dados.cliente_id,
     )
     return _veiculo_out(_crud_veiculos(repo).criar(veiculo))
 
@@ -113,11 +123,15 @@ def obter_veiculo(veiculo_id: UUID, repo: RepositorioCrud = Depends(obter_reposi
 
 @veiculos.put("/{veiculo_id}", response_model=VeiculoOut)
 def atualizar_veiculo(
-    veiculo_id: UUID, dados: VeiculoIn, repo: RepositorioCrud = Depends(obter_repositorio_veiculo)
+    veiculo_id: UUID,
+    dados: VeiculoIn,
+    repo: RepositorioCrud = Depends(obter_repositorio_veiculo),
+    repo_cliente: RepositorioCrud = Depends(obter_repositorio_cliente),
 ):
+    _exige_cliente_existente(dados.cliente_id, repo_cliente)
     veiculo = Veiculo(
         Placa(dados.placa), dados.marca, dados.modelo, dados.ano,
-        UUID(dados.cliente_id) if dados.cliente_id else None, veiculo_id,
+        dados.cliente_id, veiculo_id,
     )
     return _veiculo_out(_crud_veiculos(repo).atualizar(veiculo))
 

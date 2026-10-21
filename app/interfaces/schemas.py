@@ -6,6 +6,7 @@ Valores monetários trafegam como texto com 2 casas, para não perder precisão.
 from __future__ import annotations
 
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -14,17 +15,17 @@ from app.application.casos_uso import AcaoOrdem
 
 # --- entrada ---
 class CriarOrdemIn(BaseModel):
-    cliente_id: str = Field(description="id de um cliente cadastrado")
-    veiculo_id: str = Field(description="id de um veículo cadastrado")
+    cliente_id: UUID = Field(description="id de um cliente cadastrado")
+    veiculo_id: UUID = Field(description="id de um veículo cadastrado")
     moeda: str = "BRL"
 
 
 class IncluirServicoIn(BaseModel):
-    servico_id: str = Field(description="id de um serviço do catálogo")
+    servico_id: UUID = Field(description="id de um serviço do catálogo")
 
 
 class IncluirPecaIn(BaseModel):
-    peca_id: str = Field(description="id de uma peça do catálogo")
+    peca_id: UUID = Field(description="id de uma peça do catálogo")
     quantidade: int = Field(examples=[2], gt=0)
 
 

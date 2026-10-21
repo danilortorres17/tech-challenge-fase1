@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 
 from app.domain.exceptions import (
+    MoedaIncompativel,
     OperacaoInvalida,
     RegistroNaoEncontrado,
     TransicaoInvalida,
@@ -38,8 +39,15 @@ def test_remover_servico_e_peca_recalcula_orcamento() -> None:
 
     os.remover_peca(pid)
     assert os.calcular_orcamento().valor == Decimal("90.00")
+
     os.remover_servico(sid)
     assert os.calcular_orcamento().valor == Decimal("0.00")
+
+
+def test_item_em_moeda_diferente_da_os_e_recusado() -> None:
+    os = OrdemServico(CpfCnpj("111.444.777-35"), Placa("ABC1D23"), moeda="USD")
+    with pytest.raises(MoedaIncompativel):
+        os.incluir_servico("Troca de óleo", Dinheiro(Decimal("120.00")))  # BRL
 
 
 def test_remover_item_inexistente_lanca_erro() -> None:
