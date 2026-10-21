@@ -83,6 +83,26 @@ def _para_saida(ordem: OrdemServico) -> OrdemServicoOut:
     )
 
 
+def _mascarar_documento(doc: str) -> str:
+    """Mascara o CPF/CNPJ, deixando visíveis só os 2 últimos dígitos."""
+    restantes = sum(c.isdigit() for c in doc) - 2
+    saida, i = [], 0
+    for c in doc:
+        if c.isdigit():
+            saida.append("*" if i < restantes else c)
+            i += 1
+        else:
+            saida.append(c)
+    return "".join(saida)
+
+
+def _para_saida_publica(ordem: OrdemServico) -> OrdemServicoOut:
+    """Versão da consulta pública: o documento do cliente vai mascarado."""
+    saida = _para_saida(ordem)
+    saida.cliente = _mascarar_documento(saida.cliente)
+    return saida
+
+
 @router.post(
     "", status_code=status.HTTP_201_CREATED, response_model=OrdemServicoOut,
     summary="Abre uma OS para um cliente e veículo cadastrados (requer autenticação)",
@@ -95,7 +115,7 @@ def criar(
     usuario: str = Depends(usuario_atual),
 ):
     ordem_id = CriarOrdemServico(repo, repo_cliente, repo_veiculo).executar(
-        UUID(dados.cliente_id), UUID(dados.veiculo_id), dados.moeda
+        dados.cliente_id, dados.veiculo_id, dados.moeda
     )
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 
@@ -116,7 +136,8 @@ def listar(
     summary="Consulta o andamento de uma ordem de serviço (público)",
 )
 def consultar(ordem_id: UUID, repo: OrdemServicoRepositorio = Depends(obter_repositorio)):
-    return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
+    # Consulta pública: o documento do cliente é mascarado (LGPD).
+    return _para_saida_publica(ConsultarOrdemServico(repo).executar(ordem_id))
 
 
 @router.post(
@@ -130,7 +151,7 @@ def incluir_servico(
     repo_servico: RepositorioCrud[Servico] = Depends(obter_repositorio_servico),
     usuario: str = Depends(usuario_atual),
 ):
-    IncluirServicoNaOrdem(repo, repo_servico).executar(ordem_id, UUID(dados.servico_id))
+    IncluirServicoNaOrdem(repo, repo_servico).executar(ordem_id, dados.servico_id)
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 
 
@@ -146,7 +167,7 @@ def incluir_peca(
     usuario: str = Depends(usuario_atual),
 ):
     IncluirPecaNaOrdem(repo, repo_peca).executar(
-        ordem_id, UUID(dados.peca_id), dados.quantidade
+        ordem_id, dados.peca_id, dados.quantidade
     )
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 

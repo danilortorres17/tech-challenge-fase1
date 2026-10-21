@@ -74,10 +74,12 @@ uvicorn app.main:app --reload
 ## Instruções para execução dos testes
 
 ```bash
+pip install -r requirements-dev.txt
 pytest
 ```
 
-A cobertura é exibida no terminal ao final da execução.
+As dependências de teste (pytest, httpx) ficam em `requirements-dev.txt`, fora do
+runtime de produção. A cobertura é exibida no terminal ao final da execução.
 
 ## Qualidade e segurança
 

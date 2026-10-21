@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.domain.exceptions import (
@@ -58,6 +59,14 @@ def create_app() -> FastAPI:
     @app.exception_handler(ErroDeDominio)
     async def _erro_de_dominio(request: Request, exc: ErroDeDominio):
         return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @app.exception_handler(IntegrityError)
+    async def _integridade(request: Request, exc: IntegrityError):
+        # Violação de restrição única no banco (ex.: CPF/placa já existentes).
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "Registro duplicado: viola uma restrição de unicidade."},
+        )
 
     return app
 

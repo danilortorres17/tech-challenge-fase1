@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from app.domain.exceptions import (
+    MoedaIncompativel,
     OperacaoInvalida,
     RegistroNaoEncontrado,
     TransicaoInvalida,
@@ -117,6 +118,7 @@ class OrdemServico:
         self, descricao: str, preco: Dinheiro, servico_id: UUID | None = None
     ) -> None:
         self._exige_status_editavel()
+        self._exige_mesma_moeda(preco)
         self._itens_servico.append(ItemServico(descricao, preco, servico_id))
 
     def incluir_peca(
@@ -127,6 +129,7 @@ class OrdemServico:
         peca_id: UUID | None = None,
     ) -> None:
         self._exige_status_editavel()
+        self._exige_mesma_moeda(preco_unitario)
         self._itens_peca.append(ItemPeca(descricao, preco_unitario, quantidade, peca_id))
 
     def remover_servico(self, servico_id: UUID) -> None:
@@ -198,4 +201,10 @@ class OrdemServico:
         if self._status not in _STATUS_EDITAVEIS:
             raise OperacaoInvalida(
                 f"Não é possível alterar itens com a OS em '{self._status.value}'."
+            )
+
+    def _exige_mesma_moeda(self, preco: Dinheiro) -> None:
+        if preco.moeda != self._moeda:
+            raise MoedaIncompativel(
+                f"O item está em {preco.moeda}, mas a OS está em {self._moeda}."
             )

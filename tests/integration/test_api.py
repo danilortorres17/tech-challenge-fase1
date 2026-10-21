@@ -89,6 +89,22 @@ def test_criar_e_consultar(client) -> None:
     assert r.json()["cliente_id"] is not None
 
 
+def test_id_invalido_retorna_422(client) -> None:
+    r = client.post(
+        "/ordens-servico",
+        json={"cliente_id": "abc", "veiculo_id": _id_veiculo(client)},
+    )
+    assert r.status_code == 422
+
+
+def test_consulta_publica_mascara_documento(client) -> None:
+    ordem_id = _criar_os(client)
+    doc = client.get(f"/ordens-servico/{ordem_id}").json()["cliente"]
+    assert "*" in doc
+    assert doc.endswith("35")  # só os 2 últimos dígitos ficam visíveis
+    assert "111" not in doc
+
+
 def test_fluxo_completo_com_baixa_de_estoque(client) -> None:
     ordem_id = _criar_os(client)
     servico_id = _id_servico(client)
