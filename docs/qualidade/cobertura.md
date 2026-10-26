@@ -36,18 +36,18 @@ app/infrastructure/senhas.py                       9      0   100%
 app/infrastructure/startup.py                     10      1    90%   19
 app/infrastructure/unit_of_work.py                29      0   100%
 app/interfaces/auditoria.py                        9      0   100%
-app/interfaces/auth.py                            43      3    93%   60-61, 89
+app/interfaces/auth.py                            49      4    92%   62-63, 86, 99
 app/interfaces/cadastros.py                      106     13    88%   116, 131-136, 165, 170, 177-178, 183, 207, 219-220, 225
 app/interfaces/dependencias.py                    27      9    67%   31, 35, 39, 43, 47, 51, 55, 59, 63
 app/interfaces/health.py                           5      0   100%
-app/interfaces/ordens.py                          62      0   100%
+app/interfaces/ordens.py                          60      0   100%
 app/interfaces/relatorios.py                      17      0   100%
-app/interfaces/schemas.py                         42      0   100%
+app/interfaces/schemas.py                         51      0   100%
 app/interfaces/schemas_cadastros.py               44      0   100%
 app/main.py                                       45      5    89%   29-31, 62, 71
 ----------------------------------------------------------------------------
-TOTAL                                           1377     76    94%
-107 passed
+TOTAL                                           1390     77    94%
+109 passed
 ```
 
 **Cobertura total: 94%** - acima do mínimo de 80%. Domínios críticos (entidades,

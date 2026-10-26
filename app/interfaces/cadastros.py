@@ -14,7 +14,7 @@ from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
 from app.domain.exceptions import RegistroNaoEncontrado
 from app.domain.repositorios import RepositorioCrud
 from app.domain.value_objects import CpfCnpj, Dinheiro, Placa
-from app.interfaces.auth import usuario_atual
+from app.interfaces.auth import requer_admin
 from app.interfaces.dependencias import (
     obter_repositorio_cliente,
     obter_repositorio_peca,
@@ -35,7 +35,7 @@ from app.interfaces.schemas_cadastros import (
 
 # ------------------------------- Clientes ----------------------------------
 clientes = APIRouter(
-    prefix="/clientes", tags=["clientes"], dependencies=[Depends(usuario_atual)]
+    prefix="/clientes", tags=["clientes"], dependencies=[Depends(requer_admin)]
 )
 
 
@@ -78,7 +78,7 @@ def remover_cliente(cliente_id: UUID, repo: RepositorioCrud = Depends(obter_repo
 
 # ------------------------------- Veículos ----------------------------------
 veiculos = APIRouter(
-    prefix="/veiculos", tags=["veículos"], dependencies=[Depends(usuario_atual)]
+    prefix="/veiculos", tags=["veículos"], dependencies=[Depends(requer_admin)]
 )
 
 
@@ -143,7 +143,7 @@ def remover_veiculo(veiculo_id: UUID, repo: RepositorioCrud = Depends(obter_repo
 
 # ------------------------------- Serviços ----------------------------------
 servicos = APIRouter(
-    prefix="/servicos", tags=["serviços"], dependencies=[Depends(usuario_atual)]
+    prefix="/servicos", tags=["serviços"], dependencies=[Depends(requer_admin)]
 )
 
 
@@ -185,7 +185,7 @@ def remover_servico(servico_id: UUID, repo: RepositorioCrud = Depends(obter_repo
 
 # -------------------------------- Peças ------------------------------------
 pecas = APIRouter(
-    prefix="/pecas", tags=["peças e insumos"], dependencies=[Depends(usuario_atual)]
+    prefix="/pecas", tags=["peças e insumos"], dependencies=[Depends(requer_admin)]
 )
 
 

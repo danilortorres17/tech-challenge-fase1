@@ -12,7 +12,7 @@ from app.infrastructure.repositorios_crud import (
     RepositorioServicoSQLAlchemy,
     RepositorioVeiculoSQLAlchemy,
 )
-from app.interfaces.auth import usuario_atual
+from app.interfaces.auth import requer_admin
 from app.interfaces.dependencias import (
     obter_repositorio_cliente,
     obter_repositorio_peca,
@@ -36,7 +36,7 @@ def client() -> TestClient:
     app.dependency_overrides[obter_repositorio_veiculo] = lambda: RepositorioVeiculoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_servico] = lambda: RepositorioServicoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_peca] = lambda: RepositorioPecaSQLAlchemy(factory)
-    app.dependency_overrides[usuario_atual] = lambda: "teste"
+    app.dependency_overrides[requer_admin] = lambda: "teste"
     yield TestClient(app)
     app.dependency_overrides.clear()
 

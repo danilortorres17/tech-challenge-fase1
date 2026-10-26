@@ -62,6 +62,23 @@ class OrdemServicoOut(BaseModel):
     itens_peca: list[ItemPecaOut]
 
 
+class OrdemServicoPublicaOut(BaseModel):
+    """Visão pública de acompanhamento da OS.
+
+    Minimização de dados: expõe o andamento, o valor do orçamento e o documento
+    do cliente mascarado, mas omite a placa do veículo e a composição detalhada
+    de serviços e peças, que não são necessárias para o acompanhamento público.
+    """
+    id: str
+    cliente: str
+    cliente_id: str | None
+    veiculo_id: str | None
+    status: str
+    aprovado: bool | None
+    moeda: str
+    orcamento: str
+
+
 class TempoMedioOut(BaseModel):
     amostras: int
     tempo_medio_segundos: float

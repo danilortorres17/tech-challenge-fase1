@@ -20,7 +20,7 @@ from app.infrastructure.repositorios_crud import (
 )
 from app.infrastructure.repositorio_auditoria import RepositorioAuditoriaSQLAlchemy
 from app.infrastructure.unit_of_work import UnidadeDeTrabalhoSQLAlchemy
-from app.interfaces.auth import usuario_atual
+from app.interfaces.auth import requer_admin
 from app.interfaces.dependencias import (
     obter_repositorio,
     obter_repositorio_auditoria,
@@ -48,7 +48,7 @@ def client() -> TestClient:
     app.dependency_overrides[obter_repositorio_peca] = lambda: RepositorioPecaSQLAlchemy(factory)
     app.dependency_overrides[obter_unidade_trabalho] = lambda: UnidadeDeTrabalhoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_auditoria] = lambda: RepositorioAuditoriaSQLAlchemy(factory)
-    app.dependency_overrides[usuario_atual] = lambda: "teste"
+    app.dependency_overrides[requer_admin] = lambda: "teste"
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -106,6 +106,18 @@ def test_consulta_publica_mascara_documento(client) -> None:
     assert "*" in doc
     assert doc.endswith("35")  # só os 2 últimos dígitos ficam visíveis
     assert "111" not in doc
+
+
+def test_consulta_publica_omite_itens_e_placa(client) -> None:
+    # Minimização de dados: a visão pública não traz placa nem a composição
+    # detalhada de itens, só o andamento, o valor e o cliente mascarado.
+    ordem_id = _criar_os(client)
+    corpo = client.get(f"/ordens-servico/{ordem_id}").json()
+    assert "itens_peca" not in corpo
+    assert "itens_servico" not in corpo
+    assert "veiculo" not in corpo
+    assert corpo["status"] == "Recebida"
+    assert "orcamento" in corpo
 
 
 def test_fluxo_completo_com_baixa_de_estoque(client) -> None:

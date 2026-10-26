@@ -14,6 +14,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o código da aplicação
 COPY . .
 
+# Hardening: a aplicação roda como usuário sem privilégios (não-root), e o
+# volume /data (banco SQLite) pertence a ele.
+RUN useradd --create-home --uid 1000 appuser \
+    && mkdir -p /data \
+    && chown -R appuser:appuser /app /data
+USER appuser
+
 # Porta da API
 EXPOSE 8000
 

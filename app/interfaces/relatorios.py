@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends
 
 from app.application.casos_uso import CalcularTempoMedioExecucao
 from app.domain.repositorios import OrdemServicoRepositorio
-from app.interfaces.auth import usuario_atual
+from app.interfaces.auth import requer_admin
 from app.interfaces.dependencias import obter_repositorio
 from app.interfaces.schemas import TempoMedioOut
 
 router = APIRouter(
-    prefix="/relatorios", tags=["relatórios"], dependencies=[Depends(usuario_atual)]
+    prefix="/relatorios", tags=["relatórios"], dependencies=[Depends(requer_admin)]
 )
 
 
