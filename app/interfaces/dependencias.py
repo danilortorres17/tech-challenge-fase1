@@ -13,6 +13,11 @@ from app.domain.repositorios import (
 )
 from app.infrastructure.db.base import SessionLocal
 from app.infrastructure.repositorio_sqlalchemy import RepositorioOrdemServicoSQLAlchemy
+from app.infrastructure.repositorio_auditoria import RepositorioAuditoriaSQLAlchemy
+from app.infrastructure.repositorio_usuario import (
+    RepositorioTokenRevogadoSQLAlchemy,
+    RepositorioUsuarioSQLAlchemy,
+)
 from app.infrastructure.repositorios_crud import (
     RepositorioClienteSQLAlchemy,
     RepositorioPecaSQLAlchemy,
@@ -44,3 +49,15 @@ def obter_repositorio_servico() -> RepositorioCrud[Servico]:
 
 def obter_repositorio_peca() -> RepositorioCrud[Peca]:
     return RepositorioPecaSQLAlchemy(SessionLocal)
+
+
+def obter_repositorio_usuario() -> RepositorioUsuarioSQLAlchemy:
+    return RepositorioUsuarioSQLAlchemy(SessionLocal)
+
+
+def obter_repositorio_token_revogado() -> RepositorioTokenRevogadoSQLAlchemy:
+    return RepositorioTokenRevogadoSQLAlchemy(SessionLocal)
+
+
+def obter_repositorio_auditoria() -> RepositorioAuditoriaSQLAlchemy:
+    return RepositorioAuditoriaSQLAlchemy(SessionLocal)

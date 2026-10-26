@@ -10,7 +10,7 @@
 - **Pydantic v2** - schemas de entrada/saída e validação dos objetos de valor
 - **SQLAlchemy** - persistência
 - **pytest** + **pytest-cov** - testes e cobertura
-- **JWT** (`PyJWT`) - autenticação das rotas administrativas
+- **JWT** (`PyJWT`) + **bcrypt** - autenticação das rotas administrativas e hash de senha
 - **Swagger / OpenAPI** - gerado automaticamente pelo FastAPI em `/docs`
 
 ## Arquitetura: monolito em camadas

@@ -18,10 +18,12 @@ from app.infrastructure.repositorios_crud import (
     RepositorioServicoSQLAlchemy,
     RepositorioVeiculoSQLAlchemy,
 )
+from app.infrastructure.repositorio_auditoria import RepositorioAuditoriaSQLAlchemy
 from app.infrastructure.unit_of_work import UnidadeDeTrabalhoSQLAlchemy
 from app.interfaces.auth import usuario_atual
 from app.interfaces.dependencias import (
     obter_repositorio,
+    obter_repositorio_auditoria,
     obter_repositorio_cliente,
     obter_repositorio_peca,
     obter_repositorio_servico,
@@ -45,6 +47,7 @@ def client() -> TestClient:
     app.dependency_overrides[obter_repositorio_servico] = lambda: RepositorioServicoSQLAlchemy(factory)
     app.dependency_overrides[obter_repositorio_peca] = lambda: RepositorioPecaSQLAlchemy(factory)
     app.dependency_overrides[obter_unidade_trabalho] = lambda: UnidadeDeTrabalhoSQLAlchemy(factory)
+    app.dependency_overrides[obter_repositorio_auditoria] = lambda: RepositorioAuditoriaSQLAlchemy(factory)
     app.dependency_overrides[usuario_atual] = lambda: "teste"
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -206,3 +209,13 @@ def test_tempo_medio_execucao(client) -> None:
     r = client.get("/relatorios/tempo-medio-execucao")
     assert r.status_code == 200
     assert r.json()["amostras"] == 1
+
+
+def test_auditoria_registra_eventos(client) -> None:
+    ordem_id = _criar_os(client)
+    client.post(f"/ordens-servico/{ordem_id}/status", json={"acao": "iniciar_diagnostico"})
+    r = client.get("/auditoria")
+    assert r.status_code == 200
+    eventos = [e["evento"] for e in r.json()]
+    assert "os_criada" in eventos
+    assert "status:iniciar_diagnostico" in eventos

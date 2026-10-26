@@ -17,18 +17,22 @@ from app.domain.exceptions import (
     RegistroDuplicado,
     RegistroNaoEncontrado,
 )
-from app.infrastructure.db.base import criar_tabelas
-from app.interfaces import auth, cadastros, health, ordens, relatorios
+from app.infrastructure.db.base import SessionLocal, criar_tabelas
+from app.infrastructure.observabilidade import configurar_logs
+from app.infrastructure.startup import semear_admin
+from app.interfaces import auditoria, auth, cadastros, health, ordens, relatorios
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Cria as tabelas no banco ao subir a aplicação.
+    # Cria as tabelas e semeia o usuário admin (senha em hash) ao subir.
     criar_tabelas()
+    semear_admin(SessionLocal)
     yield
 
 
 def create_app() -> FastAPI:
+    configurar_logs()
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
@@ -47,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(cadastros.servicos)
     app.include_router(cadastros.pecas)
     app.include_router(relatorios.router)
+    app.include_router(auditoria.router)
 
     @app.exception_handler(RegistroNaoEncontrado)
     async def _nao_encontrado(request: Request, exc: RegistroNaoEncontrado):

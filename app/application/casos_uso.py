@@ -13,6 +13,7 @@ from uuid import UUID
 
 from app.domain.cadastros import Cliente, Peca, Servico, Veiculo
 from app.domain.exceptions import (
+    EstoqueInsuficiente,
     OperacaoInvalida,
     OrdemNaoEncontrada,
     RegistroNaoEncontrado,
@@ -162,19 +163,22 @@ class AprovarOrdemServico:
                 if item.peca_id is not None:
                     necessario[item.peca_id] += item.quantidade
 
-            # 1) Carrega e confere o saldo de todas as peças (sem alterar nada).
-            pecas: dict[UUID, Peca] = {}
+            # 1) Confere existência e saldo de todas as peças (erro antecipado,
+            #    sem alterar nada - nunca se desconta só parte das peças).
             for peca_id, quantidade in necessario.items():
                 peca = uow.pecas.buscar_por_id(peca_id)
                 if peca is None:
                     raise RegistroNaoEncontrado(f"Peça não encontrada: {peca_id}")
                 peca.verificar_saldo(quantidade)
-                pecas[peca_id] = peca
 
-            # 2) Aplica a baixa e aprova (tudo na mesma transação da UoW).
+            # 2) Baixa atômica e condicional de cada peça, na mesma transação.
+            #    Se o saldo mudou por concorrência entre a conferência e a baixa,
+            #    a baixa falha e a transação inteira é desfeita (rollback).
             for peca_id, quantidade in necessario.items():
-                pecas[peca_id].baixar_estoque(quantidade)
-                uow.pecas.salvar(pecas[peca_id])
+                if not uow.baixar_estoque(peca_id, quantidade):
+                    raise EstoqueInsuficiente(
+                        f"Estoque insuficiente para a peça {peca_id}."
+                    )
             ordem.aprovar()
             uow.ordens.salvar(ordem)
             return ordem

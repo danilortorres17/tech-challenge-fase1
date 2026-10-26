@@ -6,9 +6,13 @@ exceção, desfaz tudo (rollback). É o que garante a atomicidade da aprovação
 """
 from __future__ import annotations
 
+from uuid import UUID
+
+from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 
 from app.domain.repositorios import UnidadeDeTrabalho
+from app.infrastructure.db.models import PecaModel
 from app.infrastructure.repositorio_sqlalchemy import RepositorioOrdemServicoSQLAlchemy
 from app.infrastructure.repositorios_crud import RepositorioPecaSQLAlchemy
 
@@ -36,3 +40,17 @@ class UnidadeDeTrabalhoSQLAlchemy(UnidadeDeTrabalho):
 
     def rollback(self) -> None:
         self._session.rollback()
+
+    def baixar_estoque(self, peca_id: UUID, quantidade: int) -> bool:
+        """UPDATE condicional: só desconta se o saldo atual comportar a baixa.
+
+        A condição `estoque >= quantidade` e o desconto acontecem na mesma
+        instrução SQL, de forma atômica - duas aprovações concorrentes nunca
+        deixam o estoque negativo. Retorna True se uma linha foi atualizada.
+        """
+        resultado = self._session.execute(
+            update(PecaModel)
+            .where(PecaModel.id == str(peca_id), PecaModel.estoque >= quantidade)
+            .values(estoque=PecaModel.estoque - quantidade)
+        )
+        return resultado.rowcount == 1

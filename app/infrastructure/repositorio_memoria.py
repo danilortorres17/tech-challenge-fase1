@@ -76,3 +76,11 @@ class UnidadeDeTrabalhoEmMemoria(UnidadeDeTrabalho):
 
     def rollback(self) -> None:  # pragma: no cover - sem transação em memória
         pass
+
+    def baixar_estoque(self, peca_id: UUID, quantidade: int) -> bool:
+        peca = self.pecas.buscar_por_id(peca_id)
+        if peca is None or peca.estoque < quantidade:
+            return False
+        peca.baixar_estoque(quantidade)
+        self.pecas.salvar(peca)
+        return True

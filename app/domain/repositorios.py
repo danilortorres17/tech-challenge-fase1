@@ -76,3 +76,14 @@ class UnidadeDeTrabalho(ABC):
 
     @abstractmethod
     def rollback(self) -> None: ...
+
+    @abstractmethod
+    def baixar_estoque(self, peca_id: UUID, quantidade: int) -> bool:
+        """Baixa atômica e condicional do estoque de uma peça.
+
+        Desconta `quantidade` somente se houver saldo suficiente no momento,
+        numa única operação. Retorna True se a baixa ocorreu e False se o saldo
+        era insuficiente - o que protege contra condições de corrida e baixa
+        dupla, mesmo sob aprovações simultâneas.
+        """
+        ...

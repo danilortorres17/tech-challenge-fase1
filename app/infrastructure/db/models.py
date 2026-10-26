@@ -106,3 +106,37 @@ class PecaModel(Base):
     preco_valor: Mapped[str] = mapped_column(String(20))
     moeda: Mapped[str] = mapped_column(String(3), default="BRL")
     estoque: Mapped[int] = mapped_column(Integer, default=0)
+
+
+# ---------------------------------------------------------------------------
+# Segurança e auditoria
+# ---------------------------------------------------------------------------
+class UsuarioModel(Base):
+    __tablename__ = "usuarios"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    usuario: Mapped[str] = mapped_column(String(80), unique=True)
+    senha_hash: Mapped[str] = mapped_column(String(200))
+    papel: Mapped[str] = mapped_column(String(30), default="admin")
+
+
+class TokenRevogadoModel(Base):
+    """Denylist de tokens (por jti) revogados no logout."""
+
+    __tablename__ = "tokens_revogados"
+
+    jti: Mapped[str] = mapped_column(String(64), primary_key=True)
+    revogado_em: Mapped[datetime] = mapped_column(DateTime)
+
+
+class AuditoriaModel(Base):
+    """Trilha de auditoria dos eventos críticos do domínio."""
+
+    __tablename__ = "auditoria"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ocorrido_em: Mapped[datetime] = mapped_column(DateTime)
+    ator: Mapped[str] = mapped_column(String(80))
+    evento: Mapped[str] = mapped_column(String(60))
+    entidade_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    detalhe: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)

@@ -31,9 +31,12 @@ from app.domain.repositorios import (
     RepositorioCrud,
     UnidadeDeTrabalho,
 )
+from app.infrastructure.observabilidade import auditar
+from app.infrastructure.repositorio_auditoria import RepositorioAuditoriaSQLAlchemy
 from app.interfaces.auth import usuario_atual
 from app.interfaces.dependencias import (
     obter_repositorio,
+    obter_repositorio_auditoria,
     obter_repositorio_cliente,
     obter_repositorio_peca,
     obter_repositorio_servico,
@@ -112,11 +115,13 @@ def criar(
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
     repo_cliente: RepositorioCrud[Cliente] = Depends(obter_repositorio_cliente),
     repo_veiculo: RepositorioCrud[Veiculo] = Depends(obter_repositorio_veiculo),
+    repo_auditoria: RepositorioAuditoriaSQLAlchemy = Depends(obter_repositorio_auditoria),
     usuario: str = Depends(usuario_atual),
 ):
     ordem_id = CriarOrdemServico(repo, repo_cliente, repo_veiculo).executar(
         dados.cliente_id, dados.veiculo_id, dados.moeda
     )
+    auditar(repo_auditoria, ator=usuario, evento="os_criada", entidade_id=ordem_id)
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
 
 
@@ -209,6 +214,7 @@ def avancar_status(
     dados: AvancarStatusIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
     uow: UnidadeDeTrabalho = Depends(obter_unidade_trabalho),
+    repo_auditoria: RepositorioAuditoriaSQLAlchemy = Depends(obter_repositorio_auditoria),
     usuario: str = Depends(usuario_atual),
 ):
     if dados.acao == AcaoOrdem.APROVAR:
@@ -216,4 +222,11 @@ def avancar_status(
         ordem = AprovarOrdemServico(uow).executar(ordem_id)
     else:
         ordem = AvancarStatusDaOrdem(repo).executar(ordem_id, dados.acao)
+    auditar(
+        repo_auditoria,
+        ator=usuario,
+        evento=f"status:{dados.acao.value}",
+        entidade_id=ordem_id,
+        detalhe=ordem.status.value,
+    )
     return _para_saida(ordem)
