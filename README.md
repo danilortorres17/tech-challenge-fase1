@@ -145,4 +145,4 @@ Ver [`docs/ddd/`](docs/ddd/) - Event Storming, modelagem e linguagem ubíqua.
 
 ## Vídeo da entrega
 
-<!-- Preencher na entrega final. -->
+https://youtu.be/il9-lwyKGqI
