@@ -17,8 +17,11 @@ automaticamente. A OS percorre uma máquina de status
 (Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Finalizada →
 Entregue; um orçamento recusado vai para Rejeitada e pode ser reaberto para
 ajuste) com regras de transição aplicadas no domínio. A aprovação dá baixa no
-estoque das peças dentro de uma transação única (Unit of Work). As rotas
-administrativas são protegidas por JWT; a consulta de andamento é pública.
+estoque das peças dentro de uma transação única (Unit of Work), por um UPDATE
+condicional atômico que impede baixa dupla em concorrência. As rotas
+administrativas são protegidas por JWT (com logout que revoga o token); a
+consulta de andamento é pública. As senhas são guardadas apenas como hash
+(bcrypt) e os eventos sensíveis ficam registrados em uma trilha de auditoria.
 
 ## Arquitetura utilizada
 
@@ -42,7 +45,7 @@ domínio em [`docs/ddd/`](docs/ddd/) e as decisões em [`docs/adr/`](docs/adr/).
 - FastAPI (REST + Swagger/OpenAPI automático)
 - Pydantic v2
 - SQLAlchemy 2 + SQLite
-- PyJWT (autenticação JWT)
+- PyJWT (autenticação JWT) + bcrypt (hash de senha)
 - pytest + pytest-cov
 - bandit + pip-audit (análise de segurança)
 - Docker + docker-compose
@@ -83,10 +86,14 @@ runtime de produção. A cobertura é exibida no terminal ao final da execução
 
 ## Qualidade e segurança
 
-- **Cobertura de testes:** 95% (mínimo exigido: 80%). Evidência em
-  [`docs/qualidade/cobertura.md`](docs/qualidade/cobertura.md).
+- **Cobertura de testes:** 94% (mínimo exigido: 80%), com 107 testes. Evidência
+  em [`docs/qualidade/cobertura.md`](docs/qualidade/cobertura.md).
 - **Análise de segurança:** `bandit` (código) e `pip-audit` (dependências),
   ambos sem apontamentos. Relatório em
+  [`docs/qualidade/relatorio-seguranca.md`](docs/qualidade/relatorio-seguranca.md).
+- **Práticas aplicadas:** senha em hash (bcrypt), segredo do JWT obrigatório em
+  produção, revogação de token no logout, baixa de estoque atômica e trilha de
+  auditoria. Detalhes em
   [`docs/qualidade/relatorio-seguranca.md`](docs/qualidade/relatorio-seguranca.md).
 
 Para reexecutar:
@@ -118,9 +125,13 @@ As rotas administrativas exigem um token JWT. Para obter o token:
    Swagger, use o botão **Authorize**).
 2. Envie o token no header `Authorization: Bearer <token>` nas rotas
    administrativas.
+3. `POST /auth/logout` encerra a sessão: o token atual é revogado e deixa de
+   ser aceito, mesmo antes de expirar.
 
-As credenciais e o segredo do JWT são configuráveis por variáveis de ambiente
-(ver `.env.example`).
+A senha do admin é guardada apenas como hash (bcrypt); o usuário é semeado no
+primeiro boot. As credenciais e o segredo do JWT são configuráveis por variáveis
+de ambiente (ver `.env.example`). Em `APP_ENV=production`, a aplicação recusa
+subir enquanto o `JWT_SECRET` estiver no valor padrão.
 
 ## Estrutura dos principais diretórios
 

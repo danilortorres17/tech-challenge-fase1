@@ -112,6 +112,19 @@ def test_aprovacao_faz_rollback_se_falhar_ao_salvar_ordem(ctx, monkeypatch) -> N
     assert ConsultarOrdemServico(ctx.os).executar(ordem_id).status == StatusOS.AGUARDANDO_APROVACAO
 
 
+def test_baixa_atomica_recusa_quando_saldo_insuficiente(ctx) -> None:
+    """A baixa condicional (UPDATE ... WHERE estoque >= qtd) nunca negativa.
+
+    Protege contra concorrência/baixa dupla: a segunda baixa, que excede o
+    saldo restante, é recusada sem alterar o estoque.
+    """
+    uow = UnidadeDeTrabalhoSQLAlchemy(ctx.factory)
+    with uow:
+        assert uow.baixar_estoque(ctx.peca_obj.id, 7) is True   # 10 -> 3
+        assert uow.baixar_estoque(ctx.peca_obj.id, 7) is False  # 3 < 7, recusada
+    assert ctx.peca.buscar_por_id(ctx.peca_obj.id).estoque == 3
+
+
 def test_listar(ctx) -> None:
     _criar(ctx)
     assert len(ctx.os.listar()) == 1
