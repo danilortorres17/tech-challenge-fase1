@@ -1,8 +1,9 @@
-"""Autenticação: login, logout e proteção das rotas administrativas.
+"""Autenticação e autorização das rotas administrativas.
 
-Expõe POST /auth/token (devolve um JWT), POST /auth/logout (revoga o token
-atual) e a dependência `usuario_atual`, que as rotas administrativas usam para
-exigir um token válido e não revogado. As senhas são verificadas por hash.
+Expõe POST /auth/token (devolve um JWT) e POST /auth/logout (revoga o token
+atual). A dependência `usuario_atual` exige um token válido e não revogado
+(autenticação); `requer_admin` exige, além disso, o papel de administrador no
+token (autorização). As senhas são verificadas por hash.
 """
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt import InvalidTokenError
 
+from app.domain.usuario import PAPEL_ADMIN
 from app.infrastructure.observabilidade import auditar
 from app.infrastructure.repositorio_auditoria import RepositorioAuditoriaSQLAlchemy
 from app.infrastructure.repositorio_usuario import (
@@ -67,13 +69,10 @@ def logout(
     return {"detail": "Sessão encerrada."}
 
 
-def usuario_atual(
-    token: str = Depends(oauth2_scheme),
-    repo_revogados: RepositorioTokenRevogadoSQLAlchemy = Depends(
-        obter_repositorio_token_revogado
-    ),
-) -> str:
-    """Valida o token (assinatura, expiração e revogação) e devolve o usuário."""
+def _validar_token(
+    token: str, repo_revogados: RepositorioTokenRevogadoSQLAlchemy
+) -> dict:
+    """Valida assinatura, expiração, presença de `sub`/`jti` e revogação."""
     erro = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token inválido ou expirado.",
@@ -83,10 +82,38 @@ def usuario_atual(
         dados = decodificar_token(token)
     except InvalidTokenError:
         raise erro
-    sub = dados.get("sub")
-    jti = dados.get("jti")
-    if sub is None or jti is None:
+    if dados.get("sub") is None or dados.get("jti") is None:
         raise erro
-    if repo_revogados.esta_revogado(jti):
+    if repo_revogados.esta_revogado(dados["jti"]):
         raise erro
-    return sub
+    return dados
+
+
+def usuario_atual(
+    token: str = Depends(oauth2_scheme),
+    repo_revogados: RepositorioTokenRevogadoSQLAlchemy = Depends(
+        obter_repositorio_token_revogado
+    ),
+) -> str:
+    """Autenticação: devolve o usuário de um token válido e não revogado."""
+    return _validar_token(token, repo_revogados)["sub"]
+
+
+def requer_admin(
+    token: str = Depends(oauth2_scheme),
+    repo_revogados: RepositorioTokenRevogadoSQLAlchemy = Depends(
+        obter_repositorio_token_revogado
+    ),
+) -> str:
+    """Autorização: exige token válido E papel de administrador.
+
+    Autenticar não é autorizar: um token válido sem o papel exigido é recusado
+    com 403, separando a identidade (quem é) da permissão (o que pode fazer).
+    """
+    dados = _validar_token(token, repo_revogados)
+    if dados.get("papel") != PAPEL_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permissão insuficiente para esta operação.",
+        )
+    return dados["sub"]

@@ -4,13 +4,17 @@ services:
     container_name: oficina-api
     ports:
       - "8000:8000"
+    # Os valores abaixo são apenas defaults de desenvolvimento. Em produção,
+    # defina APP_ENV=production e um JWT_SECRET forte no ambiente (por exemplo,
+    # num arquivo .env não versionado). Com APP_ENV=production, a aplicação se
+    # recusa a subir enquanto o JWT_SECRET continuar no valor padrão.
     environment:
-      # SQLite persistido num volume, fora do container
-      DATABASE_URL: "sqlite:////data/oficina.db"
-      JWT_SECRET: "troque-este-segredo-em-producao"
-      JWT_EXPIRA_MIN: "60"
-      ADMIN_USUARIO: "admin"
-      ADMIN_SENHA: "admin123"
+      APP_ENV: "${APP_ENV:-development}"
+      DATABASE_URL: "${DATABASE_URL:-sqlite:////data/oficina.db}"
+      JWT_SECRET: "${JWT_SECRET:-troque-por-um-valor-secreto-bem-grande}"
+      JWT_EXPIRA_MIN: "${JWT_EXPIRA_MIN:-60}"
+      ADMIN_USUARIO: "${ADMIN_USUARIO:-admin}"
+      ADMIN_SENHA: "${ADMIN_SENHA:-admin123}"
     volumes:
       - oficina_data:/data
 

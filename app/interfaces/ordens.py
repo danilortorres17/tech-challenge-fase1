@@ -33,7 +33,7 @@ from app.domain.repositorios import (
 )
 from app.infrastructure.observabilidade import auditar
 from app.infrastructure.repositorio_auditoria import RepositorioAuditoriaSQLAlchemy
-from app.interfaces.auth import usuario_atual
+from app.interfaces.auth import requer_admin
 from app.interfaces.dependencias import (
     obter_repositorio,
     obter_repositorio_auditoria,
@@ -51,6 +51,7 @@ from app.interfaces.schemas import (
     ItemPecaOut,
     ItemServicoOut,
     OrdemServicoOut,
+    OrdemServicoPublicaOut,
 )
 
 router = APIRouter(prefix="/ordens-servico", tags=["ordens de serviço"])
@@ -99,11 +100,19 @@ def _mascarar_documento(doc: str) -> str:
     return "".join(saida)
 
 
-def _para_saida_publica(ordem: OrdemServico) -> OrdemServicoOut:
-    """Versão da consulta pública: o documento do cliente vai mascarado."""
-    saida = _para_saida(ordem)
-    saida.cliente = _mascarar_documento(saida.cliente)
-    return saida
+def _para_saida_publica(ordem: OrdemServico) -> OrdemServicoPublicaOut:
+    """Consulta pública: andamento e valor, com o documento mascarado e sem
+    expor a placa nem a composição detalhada de itens (minimização de dados)."""
+    return OrdemServicoPublicaOut(
+        id=str(ordem.id),
+        cliente=_mascarar_documento(ordem.cliente.formatado()),
+        cliente_id=str(ordem.cliente_id) if ordem.cliente_id else None,
+        veiculo_id=str(ordem.veiculo_id) if ordem.veiculo_id else None,
+        status=ordem.status.value,
+        aprovado=ordem.aprovado,
+        moeda=ordem.moeda,
+        orcamento=f"{ordem.calcular_orcamento().valor:.2f}",
+    )
 
 
 @router.post(
@@ -116,7 +125,7 @@ def criar(
     repo_cliente: RepositorioCrud[Cliente] = Depends(obter_repositorio_cliente),
     repo_veiculo: RepositorioCrud[Veiculo] = Depends(obter_repositorio_veiculo),
     repo_auditoria: RepositorioAuditoriaSQLAlchemy = Depends(obter_repositorio_auditoria),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     ordem_id = CriarOrdemServico(repo, repo_cliente, repo_veiculo).executar(
         dados.cliente_id, dados.veiculo_id, dados.moeda
@@ -131,13 +140,13 @@ def criar(
 )
 def listar(
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     return [_para_saida(o) for o in ListarOrdensServico(repo).executar()]
 
 
 @router.get(
-    "/{ordem_id}", response_model=OrdemServicoOut,
+    "/{ordem_id}", response_model=OrdemServicoPublicaOut,
     summary="Consulta o andamento de uma ordem de serviço (público)",
 )
 def consultar(ordem_id: UUID, repo: OrdemServicoRepositorio = Depends(obter_repositorio)):
@@ -154,7 +163,7 @@ def incluir_servico(
     dados: IncluirServicoIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
     repo_servico: RepositorioCrud[Servico] = Depends(obter_repositorio_servico),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     IncluirServicoNaOrdem(repo, repo_servico).executar(ordem_id, dados.servico_id)
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
@@ -169,7 +178,7 @@ def incluir_peca(
     dados: IncluirPecaIn,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
     repo_peca: RepositorioCrud[Peca] = Depends(obter_repositorio_peca),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     IncluirPecaNaOrdem(repo, repo_peca).executar(
         ordem_id, dados.peca_id, dados.quantidade
@@ -185,7 +194,7 @@ def remover_servico(
     ordem_id: UUID,
     servico_id: UUID,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     RemoverServicoDaOrdem(repo).executar(ordem_id, servico_id)
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
@@ -199,7 +208,7 @@ def remover_peca(
     ordem_id: UUID,
     peca_id: UUID,
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     RemoverPecaDaOrdem(repo).executar(ordem_id, peca_id)
     return _para_saida(ConsultarOrdemServico(repo).executar(ordem_id))
@@ -215,7 +224,7 @@ def avancar_status(
     repo: OrdemServicoRepositorio = Depends(obter_repositorio),
     uow: UnidadeDeTrabalho = Depends(obter_unidade_trabalho),
     repo_auditoria: RepositorioAuditoriaSQLAlchemy = Depends(obter_repositorio_auditoria),
-    usuario: str = Depends(usuario_atual),
+    usuario: str = Depends(requer_admin),
 ):
     if dados.acao == AcaoOrdem.APROVAR:
         # Aprovar dá baixa no estoque das peças numa única transação (UoW).

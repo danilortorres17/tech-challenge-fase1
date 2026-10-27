@@ -59,6 +59,23 @@ No known vulnerabilities found
   de OS, mudanças de status) são registrados numa tabela de auditoria, consultável
   em `GET /auditoria` (rota autenticada). Os logs da aplicação saem em formato
   JSON. O registro de auditoria é best-effort e nunca interrompe o fluxo principal.
+- **Autorização por papel.** Autenticar e autorizar são controles distintos. As
+  rotas administrativas usam a dependência `requer_admin`, que exige o papel de
+  administrador no token além da assinatura válida; um token válido sem o papel
+  recebe 403. Há teste automatizado de acesso negado para esse caso.
+- **Consulta pública com dados mínimos.** A rota pública de andamento devolve um
+  DTO reduzido (`OrdemServicoPublicaOut`): status, valor do orçamento e documento
+  mascarado, sem a placa do veículo nem a composição detalhada de itens. Um teste
+  de contrato garante que esses campos não voltem a ser expostos.
+- **Configuração de produção.** O `docker-compose.yml` não fixa segredo nem
+  credenciais como caminho padrão de produção: usa variáveis de ambiente com
+  defaults apenas de desenvolvimento e repassa `APP_ENV`, de modo que a trava de
+  produção acima seja efetivamente exercitada.
+- **Container não-root.** A imagem Docker roda a aplicação como usuário sem
+  privilégios (`appuser`), dono do volume `/data`.
+- **Integração contínua.** Um workflow de CI (GitHub Actions) executa testes com
+  cobertura mínima de 80%, bandit e pip-audit a cada push e Pull Request, tornando
+  as métricas reproduzíveis de forma independente.
 - JWT (PyJWT) nas rotas administrativas; consulta de andamento pública.
 - Validação de CPF/CNPJ e placa nos objetos de valor; estoque nunca fica negativo.
 - Consulta pública mascara o documento do cliente (LGPD), expondo só os 2 últimos dígitos.

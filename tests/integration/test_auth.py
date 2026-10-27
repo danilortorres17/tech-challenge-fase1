@@ -107,3 +107,14 @@ def test_consulta_de_andamento_e_publica(client) -> None:
     # GET de andamento sem token não deve dar 401 (é público). Sem a OS, dá 404.
     r = client.get("/ordens-servico/00000000-0000-0000-0000-000000000000")
     assert r.status_code == 404
+
+
+def test_rota_admin_recusa_papel_nao_admin(client) -> None:
+    # Token válido, mas com papel diferente de admin: autenticado, não autorizado.
+    from app.infrastructure.seguranca import criar_token_acesso
+
+    token = criar_token_acesso("fulano", "cliente")
+    r = client.post(
+        "/clientes", json=_CLIENTE, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert r.status_code == 403

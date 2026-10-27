@@ -86,14 +86,16 @@ runtime de produção. A cobertura é exibida no terminal ao final da execução
 
 ## Qualidade e segurança
 
-- **Cobertura de testes:** 94% (mínimo exigido: 80%), com 107 testes. Evidência
+- **Cobertura de testes:** 94% (mínimo exigido: 80%), com 109 testes. Evidência
   em [`docs/qualidade/cobertura.md`](docs/qualidade/cobertura.md).
 - **Análise de segurança:** `bandit` (código) e `pip-audit` (dependências),
   ambos sem apontamentos. Relatório em
   [`docs/qualidade/relatorio-seguranca.md`](docs/qualidade/relatorio-seguranca.md).
 - **Práticas aplicadas:** senha em hash (bcrypt), segredo do JWT obrigatório em
-  produção, revogação de token no logout, baixa de estoque atômica e trilha de
-  auditoria. Detalhes em
+  produção, autorização por papel nas rotas administrativas, revogação de token no
+  logout, baixa de estoque atômica, consulta pública com dados mínimos, trilha de
+  auditoria, container não-root e pipeline de CI (testes, bandit e pip-audit).
+  Detalhes em
   [`docs/qualidade/relatorio-seguranca.md`](docs/qualidade/relatorio-seguranca.md).
 
 Para reexecutar:
@@ -129,9 +131,11 @@ As rotas administrativas exigem um token JWT. Para obter o token:
    ser aceito, mesmo antes de expirar.
 
 A senha do admin é guardada apenas como hash (bcrypt); o usuário é semeado no
-primeiro boot. As credenciais e o segredo do JWT são configuráveis por variáveis
-de ambiente (ver `.env.example`). Em `APP_ENV=production`, a aplicação recusa
-subir enquanto o `JWT_SECRET` estiver no valor padrão.
+primeiro boot. Autenticação e autorização são controles distintos: além do token
+válido, as rotas administrativas exigem o papel de administrador, e um token sem
+esse papel recebe 403. As credenciais e o segredo do JWT são configuráveis por
+variáveis de ambiente (ver `.env.example`). Em `APP_ENV=production`, a aplicação
+recusa subir enquanto o `JWT_SECRET` estiver no valor padrão.
 
 ## Estrutura dos principais diretórios
 
